@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --cream: #F8EFD9;
+  --red: #F20D0D;
+  --green: #159447;
+  --yellow: #FFC400;
+  --blue: #2144B8;
+  --orange: #F47B20;
+  --black: #111111;
+  --white: #FFFFFF;
+
+  --font-display: 'Archivo Black', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --border-thick: 3px solid var(--black);
+  --border-thin: 1px solid var(--black);
+  --border-red: 2px solid var(--red);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  background-color: var(--cream);
+  color: var(--black);
+  font-family: var(--font-body);
+}
+
+body {
+  background-color: var(--cream);
+  color: var(--black);
+  overflow-x: hidden;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--red);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--red);
+  color: var(--white);
+}
+
+/* Global Typography Helpers */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+/* Editorial Button Utilities */
+.btn-editorial {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  padding: 0.8rem 1.8rem;
+  border: var(--border-thick);
+  background-color: var(--black);
+  color: var(--cream);
+  text-decoration: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
+  box-shadow: 4px 4px 0px var(--red);
+}
+
+.btn-editorial:hover {
+  background-color: var(--red);
+  color: var(--white);
+  transform: translate(-3px, -3px);
+  box-shadow: 7px 7px 0px var(--black);
+}
+
+.btn-editorial-outline {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  padding: 0.8rem 1.8rem;
+  border: var(--border-thick);
+  background-color: transparent;
+  color: var(--black);
+  text-decoration: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-editorial-outline:hover {
+  background-color: var(--black);
+  color: var(--cream);
+  transform: translate(-3px, -3px);
+  box-shadow: 4px 4px 0px var(--black);
+}
+
+/* Container & Grid utilities */
+.container-editorial {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.grid-border {
+  border-top: var(--border-thick);
+  border-bottom: var(--border-thick);
+}
+
+.border-b {
+  border-bottom: var(--border-thick);
+}
+
+.border-t {
+  border-top: var(--border-thick);
+}
+
+.border-r {
+  border-right: var(--border-thick);
+}
+
+.border-l {
+  border-left: var(--border-thick);
+}
+
+/* Marquee Banner */
+.marquee-container {
+  overflow: hidden;
+  white-space: nowrap;
+  background-color: var(--red);
+  color: var(--white);
+  padding: 0.8rem 0;
+  border-top: var(--border-thick);
+  border-bottom: var(--border-thick);
+}
+
+.marquee-content {
+  display: inline-block;
+  animation: marquee 25s linear infinite;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.marquee-item {
+  display: inline-block;
+  padding: 0 2rem;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  .container-editorial {
+    padding: 0 1rem;
+  }
+  .border-r {
+    border-right: none;
+  }
+}

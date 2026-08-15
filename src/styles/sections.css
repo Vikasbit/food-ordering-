@@ -1,0 +1,180 @@
+/* ============================================
+   SECTION OVERLAYS — DOM text on top of 3D
+   ============================================ */
+
+.section-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.5s ease;
+}
+
+.section-overlay.hidden {
+  opacity: 0;
+}
+
+.section-overlay > * {
+  pointer-events: auto;
+}
+
+/* --- HERO / FRESH --- */
+.hero-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 100px;
+  width: 100%;
+  height: 100%;
+  justify-content: flex-start;
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 16px;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 700;
+  letter-spacing: -3px;
+  line-height: 1.05;
+}
+
+.hero-footer {
+  position: absolute;
+  bottom: 50px;
+  left: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 220px;
+}
+
+.hero-pill {
+  border: 1px solid var(--border-subtle);
+  border-radius: 30px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  color: white;
+}
+
+.hero-footer h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -3px;
+  line-height: 1;
+}
+
+.kitchen-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.kitchen-video {
+  width: 300px;
+  height: 170px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+}
+
+.kitchen-video img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kitchen-action {
+  color: var(--accent-orange);
+}
+
+.kitchen-desc {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+/* --- TABLE --- */
+.table-overlay {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+.table-label {
+  font-size: 0.88rem;
+  color: var(--accent-orange);
+}
+
+.table-title {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .hero-overlay {
+    padding-top: 80px;
+  }
+
+  .hero-footer {
+    left: 20px;
+    bottom: 30px;
+  }
+
+  .hero-tags {
+    display: none;
+  }
+
+  .goals-overlay {
+    flex-direction: column;
+    gap: 30px;
+    padding: 80px 20px 30px;
+  }
+
+  .goals-container {
+    width: 100%;
+  }
+
+  .lifestyle-carousel {
+    flex-direction: column;
+  }
+
+  .nav-arrows {
+    padding: 0 40px;
+  }
+
+  .source-card {
+    left: 20px;
+    bottom: 30px;
+  }
+
+  .kitchen-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .kitchen-video {
+    width: 200px;
+    height: 120px;
+  }
+}
+

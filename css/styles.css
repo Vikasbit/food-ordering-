@@ -1,0 +1,127 @@
+/* ============================================================
+   EATnaked Exact UI Design System & Styling
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-dark: #07080a;
+    --bg-card: rgba(18, 20, 26, 0.75);
+    --bg-card-hover: rgba(28, 32, 42, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --orange-primary: #ff5722;
+    --orange-hover: #f44336;
+    --orange-glow: rgba(255, 87, 34, 0.35);
+    --green-accent: #10b981;
+    --text-primary: #ffffff;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+
+/* Background Radial Glow Effects */
+.bg-glow-1 {
+    position: fixed;
+    top: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 87, 34, 0.12) 0%, rgba(0,0,0,0) 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.bg-glow-2 {
+    pos
+    margin-bottom: 6px;
+}
+
+.partner-brand span {
+    color: #e50914; /* Netflix Red */
+}
+
+/* Feature Floating Action Buttons (AI Chat & Voice) */
+.floating-actions {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 99;
+}
+
+.fab-btn {
+    background: linear-gradient(135deg, #ff6b35 0%, #e05627 100%);
+    color: #fff;
+    border: none;
+    padding: 14px 22px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 25px var(--orange-glow);
+    transition: all 0.3s ease;
+}
+
+.fab-btn:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 12px 30px rgba(255, 87, 34, 0.6);
+}
+
+.fab-btn.voice-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35);
+}
+
+/* Modal Windows & Drawers Styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-card {
+    background: #0f1218;
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;

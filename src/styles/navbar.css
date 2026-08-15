@@ -1,0 +1,142 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 50px;
+  z-index: 1000;
+  transition: backdrop-filter 0.3s;
+}
+
+.navbar.blurred {
+  backdrop-filter: blur(12px);
+  background: rgba(5, 5, 5, 0.4);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.navbar-logo {
+  height: 38px;
+  object-fit: contain;
+}
+
+.navbar-logo-text {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.navbar-logo-text span {
+  color: var(--accent-orange);
+}
+
+.menu-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.menu-btn .bar {
+  width: 28px;
+  height: 2px;
+  background: white;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.menu-btn .bar:last-child {
+  width: 18px;
+}
+
+.navbar-center {
+  display: flex;
+  gap: 36px;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.navbar-center a {
+  color: var(--text-primary);
+  transition: color 0.3s;
+  opacity: 0.9;
+}
+
+.navbar-center a:hover {
+  color: var(--accent-orange);
+  opacity: 1;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.customer-link {
+  color: var(--accent-orange);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.customer-link:hover {
+  opacity: 0.8;
+}
+
+.order-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(30, 30, 30, 0.9);
+  border: 1px solid var(--border-subtle);
+  border-radius: 40px;
+  padding: 6px 6px 6px 20px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.order-btn:hover {
+  background: rgba(50, 50, 50, 0.9);
+  transform: translateY(-1px);
+}
+
+.order-btn .arrow-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem;
+  transition: transform 0.3s;
+}
+
+.order-btn:hover .arrow-circle {
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 16px 20px;
+  }
+  .navbar-center {
+    display: none;
+  }
+  .customer-link {
+    display: none;
+  }
+}

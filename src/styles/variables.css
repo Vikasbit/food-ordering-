@@ -1,0 +1,73 @@
+:root {
+  --bg-primary: #050505;
+  --bg-secondary: #0A0A0A;
+  --accent-orange: #FF7438;
+  --accent-orange-dark: #C95B2E;
+  --accent-green: #67C95A;
+  --accent-green-muted: #426F43;
+  --text-primary: #FFFFFF;
+  --text-secondary: #888888;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --card-bg: rgba(35, 35, 35, 0.80);
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto; /* GSAP handles smooth scroll */
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* Scrollbar hide */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-orange);
+  color: white;
+}
+

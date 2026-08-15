@@ -1,0 +1,36 @@
+.contact-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent-orange);
+  color: white;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255, 116, 56, 0.35);
+  transition: all 0.3s;
+}
+
+.contact-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(255, 116, 56, 0.5);
+}
+
+.contact-arrow {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .contact-btn {
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    bottom: 20px;
+    right: 20px;
+  }
+}
