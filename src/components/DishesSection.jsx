@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { SIGNATURE_DISHES } from '../data/menu';
 
-export default function DishesSection({ onSelectDish, onAddToCart, onCustomizeDish }) {
+export default function DishesSection({ onSelectDish, onAddToCart, onCustomizeDish, onOpenRestaurantPage }) {
   return (
     <section
       id="our-food"
@@ -12,6 +12,55 @@ export default function DishesSection({ onSelectDish, onAddToCart, onCustomizeDi
       }}
     >
       <div className="container-editorial">
+        {/* Marketplace Restaurant Discovery Banner */}
+        <div
+          style={{
+            backgroundColor: 'var(--black)',
+            color: 'var(--yellow)',
+            border: 'var(--border-thick)',
+            boxShadow: '6px 6px 0px var(--red)',
+            padding: '1.2rem 1.8rem',
+            marginBottom: '2.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}
+        >
+          <div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--red)', display: 'block', textTransform: 'uppercase' }}>
+              TWO-SIDED MARKETPLACE KITCHENS & SELLER STORES
+            </span>
+            <h3 style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--cream)' }}>
+              EXPLORE NEARBY EATNAKED RESTAURANT PARTNERS & MENUS
+            </h3>
+          </div>
+          <button
+            onClick={() => onOpenRestaurantPage && onOpenRestaurantPage({
+              id: 'rest-delhi-cp',
+              name: 'EATnaked — Connaught Place',
+              cuisine: 'North Indian · Tandoor · Thalis',
+              address: 'Block A, Inner Circle, Connaught Place, New Delhi 110001',
+              rating: 4.8,
+              reviews_count: 1420,
+              categories: [
+                {
+                  id: 'cat-curries',
+                  name: 'SIGNATURE CURRIES',
+                  items: [
+                    { id: 'item-butter-chicken', name: 'BUTTER CHICKEN SPECIAL', description: 'Tender tandoori chicken simmered in butter gravy.', price: 340, image_url: '/assets/butter-chicken-real.png', is_veg: false, is_bestseller: true },
+                    { id: 'item-palak-paneer', name: 'SHAHI PALAK PANEER', description: 'Cottage cheese in garlic spinach gravy.', price: 290, image_url: '/assets/palak-paneer-real.png', is_veg: true, is_bestseller: true }
+                  ]
+                }
+              ]
+            })}
+            className="btn-editorial"
+            style={{ backgroundColor: 'var(--yellow)', color: 'var(--black)', padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}
+          >
+            🏪 OPEN RESTAURANT STORE PAGE →
+          </button>
+        </div>
         
         {/* 3-Column Editorial Dish Grid */}
         <div

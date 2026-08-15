@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function Navbar({ onOpenCart, cartCount, onOpenOrders }) {
+export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLocation, onOpenLocationPicker, onOpenAuth, onOpenSellerPortal, currentUser }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -60,7 +60,7 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders }) {
             className="desktop-nav"
             style={{
               display: 'flex',
-              gap: '2.5rem',
+              gap: '2rem',
               alignItems: 'center'
             }}
           >
@@ -86,18 +86,78 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders }) {
             ))}
           </nav>
 
-          {/* RIGHT: Order Now Button + Cart Badge + History Button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          {/* RIGHT: Location + Seller Portal + Orders + Auth + Cart */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap' }}>
+            <button
+              onClick={onOpenLocationPicker}
+              className="btn-editorial-outline"
+              style={{
+                padding: '0.45rem 0.8rem',
+                fontSize: '0.75rem',
+                backgroundColor: 'var(--white)',
+                color: 'var(--black)',
+                borderColor: 'var(--black)',
+                boxShadow: '2px 2px 0px var(--black)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                maxWidth: '180px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span>📍</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {deliveryLocation?.label ? `${deliveryLocation.label}: ` : ''}{deliveryLocation?.address?.split(',')[0] || 'Connaught Place'}
+              </span>
+            </button>
+
+            <button
+              onClick={onOpenSellerPortal}
+              style={{
+                padding: '0.45rem 0.75rem',
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.75rem',
+                backgroundColor: 'var(--black)',
+                color: 'var(--yellow)',
+                border: 'var(--border-thick)',
+                boxShadow: '2px 2px 0px var(--red)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              👨‍🍳 SELLER
+            </button>
+
+            <button
+              onClick={onOpenAuth}
+              style={{
+                padding: '0.45rem 0.75rem',
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.75rem',
+                backgroundColor: 'var(--white)',
+                color: 'var(--black)',
+                border: 'var(--border-thick)',
+                boxShadow: '2px 2px 0px var(--black)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              👤 {currentUser ? (currentUser.full_name?.split(' ')[0] || 'ACCOUNT') : 'LOGIN'}
+            </button>
+
             <button
               onClick={onOpenOrders}
               className="btn-editorial-outline"
               style={{
-                padding: '0.5rem 1rem',
-                fontSize: '0.85rem',
+                padding: '0.45rem 0.75rem',
+                fontSize: '0.75rem',
                 backgroundColor: 'var(--yellow)',
                 color: 'var(--black)',
                 borderColor: 'var(--black)',
-                boxShadow: '3px 3px 0px var(--black)'
+                boxShadow: '2px 2px 0px var(--black)',
+                whiteSpace: 'nowrap'
               }}
             >
               📜 ORDERS

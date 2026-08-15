@@ -1,9 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CartDrawer({ isOpen, onClose, cartItems, onRemoveItem, onUpdateQuantity, onPlaceOrder }) {
-  const subtotal = cartItems.reduce((acc, item) => {
+export default function CartDrawer({ isOpen, onClose, cartItems = [], items = [], onRemoveItem, onUpdateQuantity, onPlaceOrder, onOpenCheckout }) {
+  const activeItems = cartItems.length > 0 ? cartItems : items;
+
+  const subtotal = activeItems.reduce((acc, item) => {
     const numericPrice = parseFloat(item.price?.toString().replace(/[^0-9.]/g, '')) || 0;
-    return acc + numericPrice * item.quantity;
+    return acc + numericPrice * (item.quantity || 1);
   }, 0);
 
   const handleCheckout = () => {
@@ -75,7 +77,7 @@ export default function CartDrawer({ isOpen, onClose, cartItems, onRemoveItem, o
               </div>
 
               {/* Cart Items List */}
-              {cartItems.length === 0 ? (
+              {activeItems.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
                   <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🛍️</span>
                   <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--black)' }}>
@@ -86,8 +88,8 @@ export default function CartDrawer({ isOpen, onClose, cartItems, onRemoveItem, o
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '55vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                  {cartItems.map((item, idx) => (
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '0.5rem' }}>
+                  {activeItems.map((item, idx) => (
                     <div
                       key={idx}
                       style={{

@@ -1,270 +1,396 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MessageSquare, CheckCircle2, ChefHat, Bike, Home, ShieldCheck, MapPin } from 'lucide-react';
-import L from 'leaflet';
+import { useState, useEffect } from 'react';
+import GoogleMapsView from './GoogleMapsView';
+import { realtimeTracker } from '../services/realtimeTracker';
+import { findNearestServingKitchen } from '../services/deliveryZoneService';
 
-export default function OrderTrackingModal({ isOpen, onClose, deliveryLocation }) {
-  const [currentStep, setCurrentStep] = useState(2); // 0: Placed, 1: Kitchen, 2: Out for Delivery, 3: Delivered
-  const [etaMinutes, setEtaMinutes] = useState(24);
-  const [progress, setProgress] = useState(0.45); // 0 to 1 along path
+export default function OrderTrackingModal({
+  isOpen,
+  onClose,
+  deliveryLocation,
+  cartItems = []
+}) {
+  const orderId = 'EAT-' + Math.floor(100000 + Math.random() * 900000);
+  
+  const [orderStatus, setOrderStatus] = useState('ORDER_CONFIRMED');
+  const [statusMessage, setStatusMessage] = useState('Order received! Kitchen is confirming details.');
+  const [driverState, setDriverState] = useState(null);
+  const [etaMinutes, setEtaMinutes] = useState(25);
+  const [isSimulating, setIsSimulating] = useState(false);
 
-  const mapContainerRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const driverMarkerRef = useRef(null);
+  const nearest = findNearestServingKitchen(deliveryLocation?.lat, deliveryLocation?.lng);
+  const kitchenLoc = nearest.selectedKitchen;
 
-  const customerLat = deliveryLocation?.lat || 28.6139;
-  const customerLon = deliveryLocation?.lon || 77.2090;
-  const restaurantLat = customerLat - 0.018;
-  const restaurantLon = customerLon - 0.015;
+  const customerLoc = {
+    lat: deliveryLocation?.lat || 28.6315,
+    lng: deliveryLocation?.lng || 77.2167,
+    label: deliveryLocation?.label || 'HOME',
+    address: deliveryLocation?.address || 'Connaught Place, New Delhi'
+  };
 
-  // Animate Rider Movement & ETA Countdown
   useEffect(() => {
     if (!isOpen) return;
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 1) {
-          setCurrentStep(3);
-          setEtaMinutes(0);
-          return 1;
-        }
-        const next = prev + 0.02;
-        const remainingMinutes = Math.max(1, Math.round(25 * (1 - next)));
-        setEtaMinutes(remainingMinutes);
-        return next;
-      });
-    }, 1500);
+    // Subscribe to order status events
+    const unsubStatus = realtimeTracker.subscribe(orderId, 'order_status_changed', (payload) => {
+      setOrderStatus(payload.status);
+      if (payload.message) setStatusMessage(payload.message);
+    });
 
-    return () => clearInterval(interval);
-  }, [isOpen]);
-
-  // Leaflet Map Initialization
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const timer = setTimeout(() => {
-      if (mapContainerRef.current && !mapInstanceRef.current) {
-        const midLat = (customerLat + restaurantLat) / 2;
-        const midLon = (customerLon + restaurantLon) / 2;
-
-        const map = L.map(mapContainerRef.current, {
-          center: [midLat, midLon],
-          zoom: 14,
-          zoomControl: true
-        });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Restaurant Marker
-        const restaurantIcon = L.divIcon({
-          className: 'resto-pin',
-          html: `<div style="background:#FFC400; color:#111; font-weight:900; padding:6px 10px; border:2.5px solid #111; border-radius:4px; font-size:11px; box-shadow:3px 3px 0px #111;">🏪 KITCHEN</div>`,
-          iconSize: [90, 32],
-          iconAnchor: [45, 32]
-        });
-        L.marker([restaurantLat, restaurantLon], { icon: restaurantIcon }).addTo(map);
-
-        // Customer Home Marker
-        const customerIcon = L.divIcon({
-          className: 'customer-pin',
-          html: `<div style="background:#F20D0D; color:#FFF; font-weight:900; padding:6px 10px; border:2.5px solid #111; border-radius:4px; font-size:11px; box-shadow:3px 3px 0px #111;">📍 YOU</div>`,
-          iconSize: [70, 32],
-          iconAnchor: [35, 32]
-        });
-        L.marker([customerLat, customerLon], { icon: customerIcon }).addTo(map);
-
-        // Route Polyline
-        L.polyline(
-          [
-            [restaurantLat, restaurantLon],
-            [customerLat, customerLon]
-          ],
-          { color: '#F20D0D', weight: 5, dashArray: '8, 8' }
-        ).addTo(map);
-
-        // Moving Driver Marker
-        const currentDriverLat = restaurantLat + (customerLat - restaurantLat) * progress;
-        const currentDriverLon = restaurantLon + (customerLon - restaurantLon) * progress;
-
-        const driverIcon = L.divIcon({
-          className: 'driver-pin',
-          html: `<div style="background:#159447; color:#FFF; font-weight:900; padding:6px 10px; border:2.5px solid #111; border-radius:4px; font-size:11px; box-shadow:3px 3px 0px #111; display:flex; align-items:center; gap:4px;">🛵 RAJU (RIDER)</div>`,
-          iconSize: [120, 32],
-          iconAnchor: [60, 32]
-        });
-
-        const driverMarker = L.marker([currentDriverLat, currentDriverLon], { icon: driverIcon }).addTo(map);
-
-        mapInstanceRef.current = map;
-        driverMarkerRef.current = driverMarker;
-      }
-    }, 200);
+    // Subscribe to live driver updates
+    const unsubDriver = realtimeTracker.subscribe(orderId, 'driver_location_updated', (payload) => {
+      setDriverState(payload);
+      if (payload.etaMinutes) setEtaMinutes(payload.etaMinutes);
+    });
 
     return () => {
-      clearTimeout(timer);
+      unsubStatus();
+      unsubDriver();
+      realtimeTracker.stopDevSimulator(orderId);
     };
-  }, [isOpen, customerLat, customerLon, restaurantLat, restaurantLon, progress]);
-
-  // Update Driver Marker Position as progress changes
-  useEffect(() => {
-    if (driverMarkerRef.current) {
-      const currentDriverLat = restaurantLat + (customerLat - restaurantLat) * progress;
-      const currentDriverLon = restaurantLon + (customerLon - restaurantLon) * progress;
-      driverMarkerRef.current.setLatLng([currentDriverLat, currentDriverLon]);
-    }
-  }, [progress, customerLat, customerLon, restaurantLat, restaurantLon]);
-
-  // Cleanup map when closed
-  useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
+  }, [isOpen, orderId]);
 
   if (!isOpen) return null;
 
-  const STEPS = [
-    { label: 'Order Placed', time: 'Just now', icon: CheckCircle2 },
-    { label: 'Kitchen Preparing', time: 'In Progress', icon: ChefHat },
-    { label: 'Out for Delivery', time: `${etaMinutes} min left`, icon: Bike },
-    { label: 'Arrived at Door', time: 'Pending', icon: Home }
-  ];
+  const handleStartSimulator = () => {
+    setIsSimulating(true);
+    realtimeTracker.startDevSimulator(orderId, kitchenLoc, customerLoc, (updatedDriver) => {
+      setDriverState(updatedDriver);
+    });
+  };
+
+  const getStatusStepIndex = () => {
+    const steps = [
+      'ORDER_CONFIRMED',
+      'PREPARING',
+      'READY_FOR_PICKUP',
+      'DRIVER_ASSIGNED',
+      'PICKED_UP',
+      'OUT_FOR_DELIVERY',
+      'ARRIVING',
+      'DELIVERED'
+    ];
+    return Math.max(0, steps.indexOf(orderStatus));
+  };
+
+  const currentStepIdx = getStatusStepIndex();
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-3xl bg-[var(--cream)] border-4 border-black shadow-[10px_10px_0px_#111] overflow-hidden flex flex-col max-h-[92vh]"
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        backdropFilter: 'blur(4px)'
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: 'var(--cream)',
+          border: 'var(--border-thick)',
+          boxShadow: '12px 12px 0px var(--black)',
+          width: '100%',
+          maxWidth: '1050px',
+          height: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: '4px'
+        }}
+      >
+        {/* Top Header Bar */}
+        <div
+          style={{
+            backgroundColor: 'var(--red)',
+            color: 'var(--white)',
+            padding: '1rem 1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: 'var(--border-thick)'
+          }}
         >
-          {/* Top Banner */}
-          <div className="bg-[var(--red)] border-b-4 border-black p-4 text-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[var(--yellow)] text-black border-2 border-black flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_#111]">
-                🛵
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>🛵</span>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'var(--font-display)' }}>
+                  TRACKING ORDER #{orderId}
+                </h3>
+                <span
+                  style={{
+                    backgroundColor: 'var(--yellow)',
+                    color: 'var(--black)',
+                    fontSize: '0.65rem',
+                    fontFamily: 'var(--font-display)',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '20px'
+                  }}
+                >
+                  LIVE GPS
+                </span>
               </div>
-              <div>
-                <h2 className="font-black text-xl tracking-wide uppercase leading-none">
-                  LIVE ORDER TRACKING
-                </h2>
-                <p className="text-xs font-bold text-[var(--yellow)] mt-1">
-                  ORDER #EN-849201 • EST. ARRIVAL: {etaMinutes > 0 ? `${etaMinutes} MINS` : 'DELIVERED!'}
-                </p>
-              </div>
+              <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9 }}>
+                {statusMessage}
+              </p>
             </div>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 bg-white text-black border-2 border-black font-extrabold text-lg shadow-[2px_2px_0px_#111] hover:bg-black hover:text-white transition-all flex items-center justify-center"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
-          <div className="p-4 space-y-4 overflow-y-auto flex-1">
-            {/* Live Progress Bar Steps */}
-            <div className="bg-white border-3 border-black p-4 shadow-[4px_4px_0px_#111]">
-              <div className="grid grid-cols-4 gap-2 relative">
-                {STEPS.map((step, index) => {
-                  const Icon = step.icon;
-                  const isActive = index === currentStep;
-                  const isDone = index < currentStep;
-                  return (
-                    <div key={index} className="flex flex-col items-center text-center relative z-10">
-                      <div
-                        className={`w-10 h-10 border-3 border-black flex items-center justify-center font-extrabold mb-1.5 transition-all shadow-[2px_2px_0px_#111] ${
-                          isDone
-                            ? 'bg-[var(--green)] text-white'
-                            : isActive
-                            ? 'bg-[var(--yellow)] text-black animate-bounce'
-                            : 'bg-gray-100 text-gray-400'
-                        }`}
-                      >
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <span className={`text-[11px] font-black uppercase ${isActive ? 'text-[var(--red)] font-extrabold' : 'text-black'}`}>
-                        {step.label}
-                      </span>
-                      <span className="text-[9px] font-bold text-gray-500">{step.time}</span>
-                    </div>
-                  );
-                })}
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* Dev Simulator Trigger */}
+            <button
+              onClick={handleStartSimulator}
+              disabled={isSimulating}
+              style={{
+                backgroundColor: 'var(--black)',
+                color: 'var(--yellow)',
+                border: '2px solid var(--yellow)',
+                padding: '0.4rem 0.8rem',
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.75rem',
+                cursor: 'pointer'
+              }}
+            >
+              {isSimulating ? '▶ SIMULATOR RUNNING' : '⚡ DEV SIMULATE RIDER'}
+            </button>
+
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--white)',
+                fontSize: '1.6rem',
+                cursor: 'pointer',
+                fontWeight: 900
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Status Timeline Bar */}
+        <div
+          style={{
+            backgroundColor: 'var(--black)',
+            color: 'var(--white)',
+            padding: '0.8rem 1.5rem',
+            borderBottom: 'var(--border-thick)',
+            overflowX: 'auto'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              minWidth: '600px',
+              position: 'relative'
+            }}
+          >
+            {[
+              { id: 'ORDER_CONFIRMED', label: 'CONFIRMED', icon: '📝' },
+              { id: 'PREPARING', label: 'PREPARING', icon: '🍳' },
+              { id: 'DRIVER_ASSIGNED', label: 'RIDER ASSIGNED', icon: '🛵' },
+              { id: 'OUT_FOR_DELIVERY', label: 'ON THE WAY', icon: '⚡' },
+              { id: 'DELIVERED', label: 'DELIVERED', icon: '🎉' }
+            ].map((step, idx) => {
+              const isCompleted = currentStepIdx >= idx * 1.5;
+              return (
+                <div key={step.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      backgroundColor: isCompleted ? 'var(--yellow)' : '#333',
+                      color: isCompleted ? 'var(--black)' : '#888',
+                      border: '2px solid var(--white)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.1rem',
+                      fontWeight: 900,
+                      marginBottom: '0.3rem'
+                    }}
+                  >
+                    {step.icon}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-display)',
+                      color: isCompleted ? 'var(--yellow)' : '#888'
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Main Content Body: Split Map & Details Drawer */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }} className="tracking-body-container">
+          
+          {/* Left Column (Details Sheet): Rider Info & Order Summary */}
+          <div
+            style={{
+              width: '380px',
+              backgroundColor: 'var(--cream)',
+              borderRight: 'var(--border-thick)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '1.5rem',
+              overflowY: 'auto'
+            }}
+            className="tracking-details-panel"
+          >
+            {/* Big ETA Card */}
+            <div
+              style={{
+                backgroundColor: 'var(--yellow)',
+                border: 'var(--border-thick)',
+                boxShadow: '4px 4px 0px var(--black)',
+                padding: '1.2rem',
+                marginBottom: '1.5rem',
+                textAlign: 'center'
+              }}
+            >
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-display)', textTransform: 'uppercase', color: 'var(--black)' }}>
+                ESTIMATED ARRIVAL TIME
+              </span>
+              <h1 style={{ margin: '0.2rem 0', fontSize: '2.8rem', color: 'var(--red)', lineHeight: 1 }}>
+                ~{etaMinutes} MIN
+              </h1>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: 'var(--black)' }}>
+                {driverState ? `${driverState.distanceRemainingKm || 2.1} km away` : 'Kitchen preparing fresh order'}
+              </p>
             </div>
 
-            {/* Live Leaflet Map Container */}
-            <div className="relative border-3 border-black shadow-[4px_4px_0px_#111] h-64 w-full overflow-hidden">
-              <div ref={mapContainerRef} className="w-full h-full z-0" />
-            </div>
-
-            {/* Delivery Rider & Contact Card */}
-            <div className="bg-white border-3 border-black p-4 shadow-[4px_4px_0px_#111] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 bg-[var(--yellow)] border-3 border-black shadow-[3px_3px_0px_#111] overflow-hidden flex items-center justify-center font-black text-2xl">
+            {/* Rider Card */}
+            <div
+              style={{
+                backgroundColor: 'var(--white)',
+                border: 'var(--border-thick)',
+                boxShadow: '4px 4px 0px var(--black)',
+                padding: '1.2rem',
+                marginBottom: '1.5rem'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                <div
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--red)',
+                    color: 'var(--white)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.6rem',
+                    fontWeight: 900,
+                    border: '2px solid var(--black)'
+                  }}
+                >
                   👨‍✈️
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-black text-base text-black uppercase">RAJU KUMAR</h4>
-                    <span className="bg-[var(--green)] text-white font-black text-[10px] px-1.5 py-0.5 border border-black">
-                      ⭐ 4.9
-                    </span>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontFamily: 'var(--font-display)' }}>
+                    {driverState?.driverName || 'Rahul Sharma'}
+                  </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--black)' }}>
+                    <span>⭐ 4.9 Rating</span>
+                    <span>• Verified Rider</span>
                   </div>
-                  <p className="text-xs font-bold text-gray-600">DELIVERY PARTNER • DL 01 AB 1234 (RED SCOOTER)</p>
-                  <p className="text-[11px] font-extrabold text-[var(--green)] flex items-center gap-1 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED VACCINATED & TEMPERATURE CHECKED
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.7rem', opacity: 0.8 }}>
+                    {driverState?.driverVehicle || 'Honda Activa 6G • DL 01 AB 1234'}
                   </p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 w-full sm:w-auto">
-                <a
-                  href="tel:+919876543210"
-                  className="flex-1 sm:flex-none py-2.5 px-4 bg-[var(--green)] text-white border-3 border-black font-extrabold text-xs uppercase shadow-[3px_3px_0px_#111] hover:bg-black transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Phone className="w-4 h-4" /> CALL RIDER
-                </a>
-                <button
-                  onClick={() => alert('Sending SMS to Raju Kumar...')}
-                  className="flex-1 sm:flex-none py-2.5 px-4 bg-[var(--yellow)] text-black border-3 border-black font-extrabold text-xs uppercase shadow-[3px_3px_0px_#111] hover:bg-[var(--red)] hover:text-white transition-all flex items-center justify-center gap-1.5"
-                >
-                  <MessageSquare className="w-4 h-4" /> MESSAGE
-                </button>
-              </div>
+              <a
+                href={`tel:${driverState?.driverPhone || '+919876543210'}`}
+                className="btn-editorial"
+                style={{
+                  width: '100%',
+                  backgroundColor: 'var(--green)',
+                  color: 'var(--white)',
+                  textAlign: 'center',
+                  padding: '0.7rem',
+                  fontSize: '0.85rem',
+                  textDecoration: 'none'
+                }}
+              >
+                📞 CALL DRIVER ({driverState?.driverPhone || '+91 98765 43210'})
+              </a>
             </div>
 
-            {/* Drop-off Address Info */}
-            <div className="bg-[var(--yellow)] border-3 border-black p-3 shadow-[3px_3px_0px_#111] flex items-center justify-between">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-5 h-5 text-black shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[10px] font-black text-black uppercase tracking-wider block">DELIVERING TO:</span>
-                  <span className="font-extrabold text-xs text-black leading-tight block">
-                    {deliveryLocation?.address || 'Connaught Place, Inner Circle, New Delhi'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Close Button */}
-          <div className="bg-white border-t-4 border-black p-3 text-center">
-            <button
-              onClick={onClose}
-              className="w-full py-2.5 bg-black text-white font-black text-sm uppercase shadow-[3px_3px_0px_#111] hover:bg-[var(--red)] transition-all"
+            {/* Order Items & Kitchen Info */}
+            <div
+              style={{
+                backgroundColor: 'var(--white)',
+                border: 'var(--border-thick)',
+                padding: '1rem'
+              }}
             >
-              KEEP TRACKING IN BACKGROUND →
-            </button>
+              <h5 style={{ margin: '0 0 0.6rem', fontFamily: 'var(--font-display)', fontSize: '0.8rem', color: 'var(--red)' }}>
+                DELIVERING FROM: {kitchenLoc.name}
+              </h5>
+              <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', opacity: 0.8 }}>
+                📍 {customerLoc.address}
+              </p>
+
+              <h5 style={{ margin: '0 0 0.6rem', fontFamily: 'var(--font-display)', fontSize: '0.8rem' }}>
+                ORDER ITEMS ({cartItems.length}):
+              </h5>
+              <div style={{ display: 'grid', gap: '0.4rem' }}>
+                {cartItems.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span>{item.quantity}x {item.name}</span>
+                    <span style={{ fontWeight: 800 }}>{item.price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
-        </motion.div>
+
+          {/* Right Column: Google Maps Interactive Live View */}
+          <div style={{ flex: 1, position: 'relative' }}>
+            <GoogleMapsView
+              customerLocation={customerLoc}
+              kitchenLocation={kitchenLoc}
+              driverLocation={driverState}
+              showRoute={true}
+              interactive={true}
+              height="100%"
+            />
+          </div>
+
+        </div>
       </div>
-    </AnimatePresence>
+
+      <style>{`
+        @media (max-width: 800px) {
+          .tracking-body-container {
+            flex-direction: column-reverse !important;
+          }
+          .tracking-details-panel {
+            width: 100% !important;
+            height: 50% !important;
+            border-right: none !important;
+            border-top: var(--border-thick) !important;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

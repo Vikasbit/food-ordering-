@@ -1,330 +1,594 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Search, Navigation, X, Check, Map as MapIcon, Loader2 } from 'lucide-react';
-import L from 'leaflet';
+import { useState, useEffect } from 'react';
+import GoogleMapsView from './GoogleMapsView';
+import { calculateHaversineDistance, estimateTravelTimeMin } from '../services/deliveryZoneService';
+import { getSavedAddresses, saveAddress } from '../services/savedAddressesService';
+import { KITCHENS_DATABASE } from '../data/kitchens';
 
-// Fix Leaflet default marker icons path
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
-
-const PRESET_CITIES = [
-  { name: 'DELHI', address: 'Connaught Place, Inner Circle, New Delhi 110001', lat: 28.6139, lon: 77.2090 },
-  { name: 'MUMBAI', address: 'Bandra Reclamation, Bandra West, Mumbai 400050', lat: 19.0760, lon: 72.8777 },
-  { name: 'BENGALURU', address: '100 Feet Road, Indiranagar, Bengaluru 560038', lat: 12.9716, lon: 77.5946 },
-  { name: 'LUCKNOW', address: 'Hazratganj Main Market, Lucknow 226001', lat: 26.8467, lon: 80.9462 },
-  { name: 'PATNA', address: 'Dak Bungla Chauraha, Patna 800001', lat: 25.5941, lon: 85.1376 },
-  { name: 'KOLKATA', address: '18 Park Street, Kolkata 700071', lat: 22.5726, lon: 88.3639 }
-];
-
-export default function LocationPickerModal({ isOpen, onClose, currentAddress, onSaveLocation }) {
+export default function LocationPickerModal({
+  isOpen,
+  onClose,
+  currentAddress,
+  onSaveLocation,
+  onSelectKitchen
+}) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [detecting, setDetecting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState({
     address: currentAddress || 'Connaught Place, Inner Circle, New Delhi 110001',
-    lat: 28.6139,
-    lon: 77.2090,
-    label: 'HOME'
+    lat: 28.6315,
+    lng: 77.2167,
+    label: 'HOME',
+    flatNo: '',
+    landmark: '',
+    instructions: ''
   });
 
-  const mapContainerRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markerInstanceRef = useRef(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [step, setStep] = useState('select_location'); // 'select_location' | 'select_kitchen'
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedKitchenId, setSelectedKitchenId] = useState(null);
 
-  // Initialize or update Leaflet Map
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      setSavedAddresses(getSavedAddresses());
+      setStep('select_location');
+    }
+  }, [isOpen]);
 
-    const timer = setTimeout(() => {
-      if (mapContainerRef.current && !mapInstanceRef.current) {
-        const map = L.map(mapContainerRef.current, {
-          center: [selectedLocation.lat, selectedLocation.lon],
-          zoom: 15,
-          zoomControl: true
-        });
+  if (!isOpen) return null;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+  // Calculate nearby kitchens evaluation when in step 2 (select_kitchen)
+  const evaluatedKitchens = KITCHENS_DATABASE.map((kitchen) => {
+    const distKm = calculateHaversineDistance(selectedLocation.lat, selectedLocation.lng, kitchen.lat, kitchen.lng);
+    const distFormatted = parseFloat(distKm.toFixed(1));
+    const travelMin = estimateTravelTimeMin(distKm);
+    const totalEtaMin = kitchen.basePrepTimeMin + travelMin + 3;
+    const inRange = distKm <= kitchen.serviceRadiusKm;
 
-        const customIcon = L.divIcon({
-          className: 'custom-pin',
-          html: `<div style="background:#F20D0D; color:#FFF; font-weight:900; padding:6px 12px; border:2.5px solid #111; border-radius:4px; font-size:12px; white-space:nowrap; box-shadow:3px 3px 0px #111;">📍 DROP LOCATION</div>`,
-          iconSize: [120, 36],
-          iconAnchor: [60, 36]
-        });
-
-        const marker = L.marker([selectedLocation.lat, selectedLocation.lon], {
-          draggable: true,
-          icon: customIcon
-        }).addTo(map);
-
-        marker.on('dragend', async () => {
-          const { lat, lng } = marker.getLatLng();
-          reverseGeocode(lat, lng);
-        });
-
-        map.on('click', (e) => {
-          const { lat, lng } = e.latlng;
-          marker.setLatLng([lat, lng]);
-          reverseGeocode(lat, lng);
-        });
-
-        mapInstanceRef.current = map;
-        markerInstanceRef.current = marker;
-      } else if (mapInstanceRef.current && markerInstanceRef.current) {
-        mapInstanceRef.current.setView([selectedLocation.lat, selectedLocation.lon], 15);
-        markerInstanceRef.current.setLatLng([selectedLocation.lat, selectedLocation.lon]);
-      }
-    }, 200);
-
-    return () => {
-      clearTimeout(timer);
+    return {
+      ...kitchen,
+      distanceKm: distFormatted,
+      travelTimeMin: travelMin,
+      totalEtaMin,
+      etaRangeText: `${totalEtaMin}–${totalEtaMin + 5} min`,
+      inRange,
+      statusLabel: inRange ? 'Open · Delivering now' : 'Outside delivery range'
     };
-  }, [isOpen, selectedLocation.lat, selectedLocation.lon]);
+  }).sort((a, b) => {
+    if (a.inRange && !b.inRange) return -1;
+    if (!a.inRange && b.inRange) return 1;
+    return a.distanceKm - b.distanceKm;
+  });
 
-  // Clean up map when modal unmounts
-  useEffect(() => {
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
-
-  // Reverse Geocode (Lat/Lon -> Address)
-  const reverseGeocode = async (lat, lon) => {
-    try {
-      setSearching(true);
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-      const data = await res.json();
-      const address = data.display_name || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-      setSelectedLocation(prev => ({
-        ...prev,
-        lat,
-        lon,
-        address
-      }));
-    } catch {
-      setSelectedLocation(prev => ({
-        ...prev,
-        lat,
-        lon,
-        address: `Location (${lat.toFixed(4)}, ${lon.toFixed(4)})`
-      }));
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  // Search Address (Query -> Lat/Lon & Suggestions)
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
-    if (!query || query.trim().length < 3) {
-      setSuggestions([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5`);
-      const data = await res.json();
-      setSuggestions(data);
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  // Auto detect user browser geolocation
-  const handleDetectLocation = () => {
+  // Handle "Use my current location"
+  const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
     }
-    setDetecting(true);
+
+    setIsDetectingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        reverseGeocode(latitude, longitude);
-        setDetecting(false);
+        const newLoc = {
+          address: `GPS Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+          lat: latitude,
+          lng: longitude,
+          label: 'GPS LOCATION',
+          flatNo: '',
+          landmark: '',
+          instructions: ''
+        };
+
+        // Reverse Geocoding
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && data.display_name) {
+              newLoc.address = data.display_name;
+            }
+            setSelectedLocation(newLoc);
+            setIsDetectingLocation(false);
+          })
+          .catch(() => {
+            setSelectedLocation(newLoc);
+            setIsDetectingLocation(false);
+          });
       },
       (err) => {
-        console.warn(err);
-        alert('Could not detect your position. Please select address manually.');
-        setDetecting(false);
+        setIsDetectingLocation(false);
+        alert(`Location permission denied (${err.message}). Please search manually.`);
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
-  const handleSelectPreset = (preset) => {
+  // Perform search via Google Maps Geocoder if available, or Nominatim API
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query.trim().length > 2) {
+      setIsSearching(true);
+
+      if (window.google && window.google.maps && window.google.maps.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ address: query }, (results, status) => {
+          if (status === 'OK' && Array.isArray(results) && results.length > 0) {
+            setSearchSuggestions(
+              results.slice(0, 5).map((item) => ({
+                display_name: item.formatted_address,
+                lat: item.geometry.location.lat(),
+                lng: item.geometry.location.lng()
+              }))
+            );
+            setIsSearching(false);
+          } else {
+            fallbackSearch(query);
+          }
+        });
+      } else {
+        fallbackSearch(query);
+      }
+    } else {
+      setSearchSuggestions([]);
+      setIsSearching(false);
+    }
+  };
+
+  const fallbackSearch = (query) => {
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setSearchSuggestions(
+            data.slice(0, 5).map((item) => ({
+              display_name: item.display_name,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            }))
+          );
+        }
+        setIsSearching(false);
+      })
+      .catch(() => {
+        setIsSearching(false);
+      });
+  };
+
+  const handleSelectSuggestion = (sug) => {
     setSelectedLocation({
-      address: preset.address,
-      lat: preset.lat,
-      lon: preset.lon,
-      label: 'CITY'
+      ...selectedLocation,
+      address: sug.display_name,
+      lat: sug.lat,
+      lng: sug.lng
     });
-    setSuggestions([]);
+    setSearchSuggestions([]);
     setSearchQuery('');
   };
 
-  const handleConfirmSave = () => {
-    onSaveLocation(selectedLocation);
-    onClose();
+  const handleSelectSavedAddress = (saved) => {
+    setSelectedLocation({
+      address: saved.address,
+      lat: saved.lat,
+      lng: saved.lng,
+      label: saved.label,
+      flatNo: saved.flatNo || '',
+      landmark: saved.landmark || '',
+      instructions: saved.instructions || ''
+    });
   };
 
-  if (!isOpen) return null;
+  const handleConfirmLocation = () => {
+    setStep('select_kitchen');
+  };
+
+  const handleSelectKitchenCard = (kitchen) => {
+    if (!kitchen.inRange) {
+      alert(`This kitchen is outside your delivery area (${kitchen.distanceKm} km). Please select a kitchen marked in green.`);
+      return;
+    }
+
+    const finalLoc = {
+      ...selectedLocation,
+      kitchen,
+      distanceKm: kitchen.distanceKm,
+      etaMin: kitchen.totalEtaMin
+    };
+
+    saveAddress(finalLoc);
+    onSaveLocation(finalLoc);
+    if (onSelectKitchen) onSelectKitchen(kitchen);
+    onClose();
+
+    // Smooth scroll to menu
+    const menuEl = document.getElementById('dishes') || document.getElementById('menu');
+    if (menuEl) {
+      menuEl.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl bg-[var(--cream)] border-4 border-black shadow-[8px_8px_0px_#111] overflow-hidden flex flex-col max-h-[90vh]"
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        backdropFilter: 'blur(4px)'
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: 'var(--cream)',
+          border: 'var(--border-thick)',
+          boxShadow: '12px 12px 0px var(--black)',
+          width: '100%',
+          maxWidth: '850px',
+          maxHeight: '92vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: '4px'
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            backgroundColor: 'var(--black)',
+            color: 'var(--cream)',
+            padding: '1.2rem 1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: 'var(--border-thick)'
+          }}
         >
-          {/* Header */}
-          <div className="bg-[var(--yellow)] border-b-4 border-black p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-6 h-6 text-black" />
-              <h2 className="font-extrabold text-xl tracking-tight text-black uppercase">
-                SELECT DELIVERY LOCATION
-              </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>📍</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--yellow)', fontFamily: 'var(--font-display)' }}>
+                {step === 'select_location' ? 'WHERE SHOULD WE DELIVER?' : 'KITCHENS NEAR YOU'}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>
+                {step === 'select_location'
+                  ? 'Enter your delivery address or confirm your pin on the map'
+                  : `Select the nearest EATnaked Kitchen Hub for ${selectedLocation.address.split(',')[0]}`}
+              </p>
             </div>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 bg-white border-2 border-black font-extrabold text-lg shadow-[2px_2px_0px_#111] hover:bg-black hover:text-white transition-all flex items-center justify-center"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
 
-          <div className="p-4 space-y-4 overflow-y-auto flex-1">
-            {/* Search Input & GPS Auto Detect */}
-            <div className="space-y-2">
-              <div className="relative flex items-center">
-                <Search className="absolute left-3 w-5 h-5 text-gray-500" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search street, area, house no, landmark in India..."
-                  className="w-full pl-10 pr-10 py-3 bg-white border-3 border-black font-semibold text-sm focus:outline-none shadow-[3px_3px_0px_#111]"
-                />
-                {searching && <Loader2 className="absolute right-3 w-5 h-5 animate-spin text-black" />}
+          <button
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--cream)',
+              fontSize: '1.5rem',
+              fontWeight: 900,
+              cursor: 'pointer'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* STEP 1: SELECT DELIVERY LOCATION */}
+        {step === 'select_location' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '1.2rem 1.5rem 0.5rem' }}>
+              {/* Search Bar + Geolocation Button */}
+              <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, position: 'relative', minWidth: '260px' }}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchInputChange}
+                    placeholder="🔍 Search delivery location (e.g. Connaught Place, Saket, Cyber City...)"
+                    style={{
+                      width: '100%',
+                      padding: '0.8rem 1rem',
+                      fontSize: '0.95rem',
+                      fontFamily: 'var(--font-body)',
+                      border: 'var(--border-thick)',
+                      backgroundColor: 'var(--white)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+
+                  {isSearching && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--red)', fontWeight: 800, marginTop: '0.2rem' }}>
+                      Searching locations...
+                    </div>
+                  )}
+
+                  {/* Suggestions Dropdown */}
+                  {searchSuggestions.length > 0 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: 'var(--white)',
+                        border: 'var(--border-thick)',
+                        borderTop: 'none',
+                        zIndex: 50,
+                        boxShadow: '4px 4px 0px var(--black)'
+                      }}
+                    >
+                      {searchSuggestions.map((sug, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => handleSelectSuggestion(sug)}
+                          style={{
+                            padding: '0.8rem 1rem',
+                            borderBottom: '1px solid #ddd',
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--cream)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--white)')}
+                        >
+                          <span>📍</span>
+                          <span>{sug.display_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleUseCurrentLocation}
+                  disabled={isDetectingLocation}
+                  className="btn-editorial"
+                  style={{
+                    backgroundColor: 'var(--yellow)',
+                    color: 'var(--black)',
+                    padding: '0.8rem 1.2rem',
+                    fontSize: '0.85rem',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  📍 {isDetectingLocation ? 'LOCATING...' : 'USE MY CURRENT LOCATION'}
+                </button>
               </div>
 
-              {/* Suggestions Dropdown */}
-              {suggestions.length > 0 && (
-                <div className="bg-white border-3 border-black shadow-[4px_4px_0px_#111] max-h-48 overflow-y-auto divide-y-2 divide-black">
-                  {suggestions.map((item, idx) => (
+              {/* Saved Addresses quick bar */}
+              {savedAddresses.length > 0 && (
+                <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', alignSelf: 'center', whiteSpace: 'nowrap' }}>
+                    SAVED:
+                  </span>
+                  {savedAddresses.map((addr) => (
                     <button
-                      key={idx}
-                      onClick={() => {
-                        setSelectedLocation({
-                          address: item.display_name,
-                          lat: parseFloat(item.lat),
-                          lon: parseFloat(item.lon),
-                          label: 'SEARCHED'
-                        });
-                        setSuggestions([]);
-                        setSearchQuery('');
+                      key={addr.id}
+                      onClick={() => handleSelectSavedAddress(addr)}
+                      style={{
+                        padding: '0.4rem 0.8rem',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: '0.75rem',
+                        border: 'var(--border-thick)',
+                        backgroundColor: 'var(--white)',
+                        color: 'var(--black)',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        boxShadow: '2px 2px 0px var(--black)'
                       }}
-                      className="w-full text-left p-3 hover:bg-[var(--yellow)] transition-colors flex items-start gap-2 text-xs font-bold"
                     >
-                      <MapPin className="w-4 h-4 text-[var(--red)] shrink-0 mt-0.5" />
-                      <span>{item.display_name}</span>
+                      🏷️ {addr.label}: {addr.address.split(',')[0]}
                     </button>
                   ))}
                 </div>
               )}
+            </div>
 
-              {/* Geolocation Button */}
+            {/* Interactive Google Map with Draggable Pin */}
+            <div style={{ flex: 1, minHeight: '300px', position: 'relative' }}>
+              <GoogleMapsView
+                customerLocation={{ lat: selectedLocation.lat, lng: selectedLocation.lng, label: selectedLocation.label }}
+                showRoute={false}
+                minHeight="300px"
+                onMapClick={(coords) => {
+                  setSelectedLocation((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
+                }}
+              />
+            </div>
+
+            {/* Footer Address Confirmation Bar */}
+            <div
+              style={{
+                backgroundColor: 'var(--white)',
+                borderTop: 'var(--border-thick)',
+                padding: '1rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem',
+                flexWrap: 'wrap'
+              }}
+            >
+              <div style={{ flex: 1, minWidth: '240px' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--red)', display: 'block', textTransform: 'uppercase' }}>
+                  SELECTED DELIVERY ADDRESS:
+                </span>
+                <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: 'var(--black)' }}>
+                  {selectedLocation.address}
+                </p>
+              </div>
+
               <button
-                onClick={handleDetectLocation}
-                disabled={detecting}
-                className="w-full py-2.5 px-4 bg-[var(--green)] text-white border-3 border-black font-extrabold text-sm uppercase shadow-[3px_3px_0px_#111] hover:bg-black transition-all flex items-center justify-center gap-2"
+                onClick={handleConfirmLocation}
+                className="btn-editorial"
+                style={{
+                  backgroundColor: 'var(--red)',
+                  color: 'var(--white)',
+                  padding: '0.8rem 2rem',
+                  fontSize: '0.95rem'
+                }}
               >
-                {detecting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    DETECTING GPS COORDINATES...
-                  </>
-                ) : (
-                  <>
-                    <Navigation className="w-4 h-4" />
-                    📍 USE CURRENT LOCATION (GPS AUTO-DETECT)
-                  </>
-                )}
+                CONFIRM LOCATION & FIND KITCHENS →
               </button>
             </div>
-
-            {/* Quick City Presets */}
-            <div>
-              <div className="text-xs font-black uppercase text-gray-700 mb-2 flex items-center gap-1">
-                <MapIcon className="w-3.5 h-3.5" /> POPULAR RESTAURANT CITIES
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                {PRESET_CITIES.map((preset) => (
-                  <button
-                    key={preset.name}
-                    onClick={() => handleSelectPreset(preset)}
-                    className={`py-1.5 px-2 text-xs font-extrabold border-2 border-black shadow-[2px_2px_0px_#111] transition-all ${
-                      selectedLocation.address.includes(preset.name)
-                        ? 'bg-[var(--red)] text-white'
-                        : 'bg-white text-black hover:bg-[var(--yellow)]'
-                    }`}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selected Address Badge */}
-            <div className="bg-white border-3 border-black p-3 shadow-[3px_3px_0px_#111]">
-              <div className="text-xs font-black text-[var(--red)] uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>DROP-OFF ADDRESS</span>
-                <span className="bg-[var(--yellow)] text-black px-2 py-0.5 border border-black font-extrabold text-[10px]">
-                  PIN DRAGGABLE 📍
-                </span>
-              </div>
-              <div className="font-extrabold text-sm text-black leading-snug line-clamp-2">
-                {selectedLocation.address}
-              </div>
-            </div>
-
-            {/* Interactive Leaflet Map Container */}
-            <div className="relative border-3 border-black shadow-[4px_4px_0px_#111] h-60 w-full overflow-hidden">
-              <div ref={mapContainerRef} className="w-full h-full z-0" />
-            </div>
           </div>
+        )}
 
-          {/* Footer Actions */}
-          <div className="bg-white border-t-4 border-black p-4 flex gap-3">
-            <button
-              onClick={onClose}
-              className="w-1/3 py-3 bg-gray-200 text-black border-3 border-black font-extrabold text-sm uppercase shadow-[3px_3px_0px_#111] hover:bg-black hover:text-white transition-all"
+        {/* STEP 2, 3 & 4: NEARBY KITCHENS LIST & MAP VIEW */}
+        {step === 'select_kitchen' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            
+            {/* Top Back Bar */}
+            <div
+              style={{
+                backgroundColor: 'var(--cream)',
+                borderBottom: 'var(--border-thick)',
+                padding: '0.8rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
             >
-              CANCEL
-            </button>
-            <button
-              onClick={handleConfirmSave}
-              className="w-2/3 py-3 bg-[var(--yellow)] text-black border-3 border-black font-black text-sm uppercase shadow-[4px_4px_0px_#111] hover:bg-[var(--red)] hover:text-white transition-all flex items-center justify-center gap-2"
-            >
-              <Check className="w-5 h-5" /> CONFIRM & SAVE LOCATION
-            </button>
+              <button
+                onClick={() => setStep('select_location')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '0.85rem',
+                  color: 'var(--red)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline'
+                }}
+              >
+                ← CHANGE DELIVERY LOCATION
+              </button>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--black)' }}>
+                📍 Delivering to: <strong>{selectedLocation.address.split(',')[0]}</strong>
+              </span>
+            </div>
+
+            {/* Split Content: Kitchen Cards List + Map */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="kitchen-selection-split">
+              
+              {/* Left Column: Kitchen Cards List */}
+              <div
+                style={{
+                  width: '380px',
+                  borderRight: 'var(--border-thick)',
+                  backgroundColor: 'var(--cream)',
+                  padding: '1.2rem',
+                  overflowY: 'auto'
+                }}
+                className="kitchen-cards-panel"
+              >
+                <h4 style={{ margin: '0 0 1rem', fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: 'var(--black)' }}>
+                  KITCHENS NEAR YOU ({evaluatedKitchens.length}):
+                </h4>
+
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {evaluatedKitchens.map((k) => {
+                    const isSelected = selectedKitchenId === k.id;
+                    return (
+                      <div
+                        key={k.id}
+                        onClick={() => setSelectedKitchenId(k.id)}
+                        style={{
+                          backgroundColor: k.inRange ? 'var(--white)' : '#F8D7DA',
+                          border: 'var(--border-thick)',
+                          boxShadow: isSelected ? '5px 5px 0px var(--red)' : '3px 3px 0px var(--black)',
+                          padding: '1rem',
+                          cursor: k.inRange ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                          <span
+                            style={{
+                              backgroundColor: k.inRange ? 'var(--green)' : 'var(--red)',
+                              color: 'var(--white)',
+                              fontFamily: 'var(--font-display)',
+                              fontSize: '0.65rem',
+                              padding: '0.2rem 0.5rem'
+                            }}
+                          >
+                            {k.inRange ? '🟢 OPEN · DELIVERING NOW' : '🔴 OUTSIDE RANGE'}
+                          </span>
+                          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', color: 'var(--black)' }}>
+                            ⭐ {k.rating}
+                          </span>
+                        </div>
+
+                        <h4 style={{ margin: '0.2rem 0', fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--black)' }}>
+                          {k.name}
+                        </h4>
+
+                        <p style={{ margin: '0 0 0.8rem', fontSize: '0.8rem', color: '#555' }}>
+                          {k.distanceKm} km away · ~{k.etaRangeText} ETA
+                        </p>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectKitchenCard(k);
+                          }}
+                          disabled={!k.inRange}
+                          className="btn-editorial"
+                          style={{
+                            width: '100%',
+                            backgroundColor: k.inRange ? 'var(--red)' : '#888',
+                            color: 'var(--white)',
+                            padding: '0.6rem',
+                            fontSize: '0.85rem',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {k.inRange ? 'VIEW MENU →' : 'UNAVAILABLE AT LOCATION'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Column: Google Maps View */}
+              <div style={{ flex: 1, position: 'relative' }}>
+                <GoogleMapsView
+                  customerLocation={{ lat: selectedLocation.lat, lng: selectedLocation.lng, label: 'YOUR LOCATION' }}
+                  showRoute={false}
+                  minHeight="100%"
+                />
+              </div>
+
+            </div>
+
           </div>
-        </motion.div>
+        )}
+
       </div>
-    </AnimatePresence>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .kitchen-selection-split {
+            flex-direction: column-reverse !important;
+          }
+          .kitchen-cards-panel {
+            width: 100% !important;
+            height: 55% !important;
+            border-right: none !important;
+            border-top: var(--border-thick) !important;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

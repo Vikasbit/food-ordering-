@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'react';
 import { X, QrCode, CreditCard, CheckCircle2, Loader2, DollarSign, Smartphone, AlertCircle, ArrowRight } from 'lucide-react';
+import { findNearestServingKitchen } from '../services/deliveryZoneService';
 
-export default function PaymentGatewayModal({ isOpen, onClose, cartItems, deliveryLocation, onPaymentSuccess }) {
+export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], deliveryLocation, onPaymentSuccess }) {
   const [activeTab, setActiveTab] = useState('upi_qr'); // upi_qr, upi_id, card, cod
   const [upiIdInput, setUpiIdInput] = useState('');
   const [cardDetails, setCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
@@ -10,6 +11,8 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
   const [paymentDone, setPaymentDone] = useState(false);
 
   if (!isOpen) return null;
+
+  const nearestMatch = findNearestServingKitchen(deliveryLocation?.lat, deliveryLocation?.lng);
 
   const subtotal = cartItems.reduce((acc, item) => {
     const numericPrice = parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0;
@@ -21,6 +24,11 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
   const grandTotal = subtotal + gstAmount + deliveryFee;
 
   const handlePayNow = () => {
+    if (!nearestMatch.isDeliverable) {
+      alert(`Cannot process checkout: Delivery address is outside our kitchen service zones (${nearestMatch.distanceKm} km away). Please select a deliverable location.`);
+      return;
+    }
+
     if (activeTab === 'upi_id' && !upiIdInput.includes('@')) {
       alert('Please enter a valid UPI ID (e.g. name@upi)');
       return;
@@ -44,6 +52,8 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
           paymentMethod: activeTab.toUpperCase(),
           items: cartItems,
           location: deliveryLocation,
+          kitchen: nearestMatch.selectedKitchen,
+          estimatedDeliveryMin: nearestMatch.totalEtaMin,
           date: new Date().toLocaleString()
         });
         onClose();
@@ -89,7 +99,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
             <div className="p-12 text-center flex flex-col items-center justify-center space-y-4">
               <Loader2 className="w-16 h-16 animate-spin text-[var(--red)]" />
               <h3 className="font-black text-2xl uppercase">PROCESSING PAYMENT...</h3>
-              <p className="text-sm font-bold text-gray-600">Contacting bank & verifying UPI transaction token...</p>
+              <p className="text-sm font-bold text-gray-600">Contacting bank & verifying transaction token...</p>
               <div className="bg-[var(--yellow)] border-2 border-black px-4 py-2 font-black text-sm">
                 PLEASE DO NOT REFRESH OR CLOSE THIS WINDOW ⚠️
               </div>
@@ -99,10 +109,33 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
             <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
               <CheckCircle2 className="w-20 h-20 text-[var(--green)] animate-bounce" />
               <h3 className="font-black text-3xl text-[var(--green)] uppercase">PAYMENT SUCCESSFUL! 🎉</h3>
-              <p className="text-base font-extrabold text-black">₹{grandTotal} RECEIVED. PREPARING YOUR ORDER.</p>
+              <p className="text-base font-extrabold text-black">₹{grandTotal} RECEIVED. CREATING ORDER & ASSIGNING RIDER.</p>
             </div>
           ) : (
             <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              
+              {/* Delivery Destination & Serving Kitchen Match Card */}
+              <div className="bg-white border-3 border-black p-3.5 shadow-[3px_3px_0px_#111] space-y-2">
+                <div className="flex items-center justify-between text-xs font-black uppercase text-gray-500">
+                  <span>DELIVERY DESTINATION & MATCHED KITCHEN</span>
+                  <span className="text-[var(--green)]">✅ ZONE VERIFIED</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="bg-[var(--cream)] p-2.5 border-2 border-black">
+                    <span className="font-black text-[var(--red)] block text-[10px]">DELIVERING TO:</span>
+                    <span className="font-extrabold text-black block truncate">{deliveryLocation?.address || 'Connaught Place, New Delhi'}</span>
+                    <span className="text-[10px] text-gray-600">Label: {deliveryLocation?.label || 'HOME'}</span>
+                  </div>
+
+                  <div className="bg-[var(--cream)] p-2.5 border-2 border-black">
+                    <span className="font-black text-[var(--green)] block text-[10px]">PREPARED BY:</span>
+                    <span className="font-extrabold text-black block truncate">{nearestMatch.selectedKitchen.name}</span>
+                    <span className="text-[10px] text-gray-600">ETA: ~{nearestMatch.totalEtaMin} min ({nearestMatch.distanceKm} km away)</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Itemized Order Breakdown Box */}
               <div className="bg-white border-3 border-black p-3.5 shadow-[3px_3px_0px_#111]">
                 <div className="text-xs font-black text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -195,12 +228,6 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
                   <div className="text-xs font-black text-black">
                     SCAN WITH ANY UPI APP (GPAY, PHONEPE, PAYTM, CRED)
                   </div>
-                  <div className="flex gap-2 justify-center">
-                    <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 border border-black">GPay</span>
-                    <span className="bg-purple-100 text-purple-800 text-[10px] font-black px-2 py-0.5 border border-black">PhonePe</span>
-                    <span className="bg-sky-100 text-sky-800 text-[10px] font-black px-2 py-0.5 border border-black">Paytm</span>
-                    <span className="bg-black text-white text-[10px] font-black px-2 py-0.5 border border-black">CRED</span>
-                  </div>
                 </div>
               )}
 
@@ -216,11 +243,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
                       placeholder="e.g. 9876543210@ybl or name@okicici"
                       className="flex-1 p-3 bg-[var(--cream)] border-2 border-black font-extrabold text-sm focus:outline-none"
                     />
-                    <button className="bg-black text-white px-4 border-2 border-black font-black text-xs uppercase hover:bg-[var(--red)]">
-                      VERIFY
-                    </button>
                   </div>
-                  <p className="text-[11px] font-bold text-gray-500">We will send a payment collect request to your UPI app.</p>
                 </div>
               )}
 
@@ -246,29 +269,6 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems, delive
                       onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
                       className="w-full p-2.5 bg-[var(--cream)] border-2 border-black text-xs font-extrabold focus:outline-none"
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-black uppercase block mb-1">EXPIRY (MM/YY)</label>
-                      <input
-                        type="text"
-                        placeholder="08/28"
-                        value={cardDetails.expiry}
-                        onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                        className="w-full p-2.5 bg-[var(--cream)] border-2 border-black text-xs font-extrabold focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase block mb-1">CVV</label>
-                      <input
-                        type="password"
-                        placeholder="•••"
-                        maxLength={4}
-                        value={cardDetails.cvv}
-                        onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })}
-                        className="w-full p-2.5 bg-[var(--cream)] border-2 border-black text-xs font-extrabold focus:outline-none"
-                      />
-                    </div>
                   </div>
                 </div>
               )}

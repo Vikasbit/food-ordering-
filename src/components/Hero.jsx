@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function Hero({ onOpenCart, onOpenLocationPicker, deliveryLocation, onOpenOrderTracking }) {
+export default function Hero({ onOpenCart, onOpenOrderTracking }) {
   return (
     <section
       id="hero"
@@ -18,100 +18,77 @@ export default function Hero({ onOpenCart, onOpenLocationPicker, deliveryLocatio
     >
       <div className="container-editorial" style={{ width: '100%', position: 'relative', zIndex: 2 }}>
         
-        {/* Top Swiggy/DoorDash Style Delivery Location & ETA Bar */}
+        {/* Top Zomato/Swiggy-Style Serving Kitchen & Delivery Status Bar */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
+            gap: '0.8rem',
             marginBottom: '2rem',
             flexWrap: 'wrap'
           }}
         >
-          {/* Location Selector */}
+          {/* Matched Serving Kitchen Hub Badge */}
           <div
-            onClick={onOpenLocationPicker}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.8rem',
+              gap: '0.6rem',
               backgroundColor: 'var(--white)',
               border: 'var(--border-thick)',
-              padding: '0.6rem 1.2rem',
-              boxShadow: '4px 4px 0px var(--black)',
-              cursor: 'pointer'
+              padding: '0.55rem 1rem',
+              boxShadow: '3px 3px 0px var(--black)'
             }}
-            className="hover:bg-[var(--yellow)] transition-all"
           >
-            <span style={{ fontSize: '1.2rem' }}>📍</span>
+            <span style={{ fontSize: '1.1rem' }}>🍳</span>
             <div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--red)', display: 'block', textTransform: 'uppercase' }}>
-                DELIVER TO (CLICK TO MAP LOCATION)
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--red)', display: 'block', textTransform: 'uppercase' }}>
+                SERVED BY CLOUD HUB
               </span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', wordBreak: 'break-word' }}>
-                {deliveryLocation?.address ? deliveryLocation.address.slice(0, 45) + (deliveryLocation.address.length > 45 ? '...' : '') : 'Connaught Place, Inner Circle, New Delhi 110001'}
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: 'var(--black)' }}>
+                EATnaked Flagship Kitchen • 4.9 ★
               </span>
             </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenLocationPicker();
-              }}
-              style={{
-                border: 'none',
-                background: 'var(--black)',
-                color: 'var(--cream)',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.75rem',
-                padding: '0.35rem 0.75rem',
-                cursor: 'pointer',
-                marginLeft: '0.5rem',
-                boxShadow: '2px 2px 0px var(--red)'
-              }}
-            >
-              CHANGE 📍
-            </button>
           </div>
 
-          {/* Delivery ETA & Promo Pill */}
-          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={onOpenOrderTracking}
-              style={{
-                backgroundColor: 'var(--green)',
-                color: 'var(--white)',
-                border: 'var(--border-thick)',
-                padding: '0.6rem 1rem',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '3px 3px 0px var(--black)'
-              }}
-            >
-              <span>🛵 LIVE TRACKING MAP</span>
-              <span>•</span>
-              <span>24 MIN ETA</span>
-            </button>
-            <div
-              style={{
-                backgroundColor: 'var(--red)',
-                color: 'var(--white)',
-                border: 'var(--border-thick)',
-                padding: '0.6rem 1rem',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.85rem',
-                boxShadow: '3px 3px 0px var(--black)'
-              }}
-            >
-              🎉 CODE: EAT50 (50% OFF)
-            </div>
+          {/* Live Order Tracking Button */}
+          <button
+            onClick={onOpenOrderTracking}
+            style={{
+              backgroundColor: 'var(--green)',
+              color: 'var(--white)',
+              border: 'var(--border-thick)',
+              padding: '0.6rem 1rem',
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '3px 3px 0px var(--black)'
+            }}
+          >
+            <span>🛵 LIVE TRACKING</span>
+            <span>•</span>
+            <span>24 MIN ETA</span>
+          </button>
+
+          {/* Promo Code Badge */}
+          <div
+            style={{
+              backgroundColor: 'var(--red)',
+              color: 'var(--white)',
+              border: 'var(--border-thick)',
+              padding: '0.65rem 1rem',
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.85rem',
+              boxShadow: '3px 3px 0px var(--black)'
+            }}
+          >
+            🎉 CODE: EAT50 (50% OFF)
           </div>
         </motion.div>
 
