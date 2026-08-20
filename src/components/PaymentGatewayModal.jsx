@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'react';
-import { X, QrCode, CreditCard, CheckCircle2, Loader2, DollarSign, Smartphone, AlertCircle, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { findNearestServingKitchen } from '../services/deliveryZoneService';
 
 export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], deliveryLocation, onPaymentSuccess }) {
-  const [activeTab, setActiveTab] = useState('upi_qr'); // upi_qr, upi_id, card, cod
+  const [activeTab, setActiveTab] = useState('upi_qr');
   const [upiIdInput, setUpiIdInput] = useState('');
   const [cardDetails, setCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
   const [processing, setProcessing] = useState(false);
@@ -15,20 +14,19 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
   const nearestMatch = findNearestServingKitchen(deliveryLocation?.lat, deliveryLocation?.lng);
 
   const subtotal = cartItems.reduce((acc, item) => {
-    const numericPrice = parseFloat(item.price.toString().replace(/[^0-9.]/g, '')) || 0;
-    return acc + numericPrice * item.quantity;
+    const numericPrice = parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0;
+    return acc + numericPrice * (item.quantity || 1);
   }, 0);
 
-  const gstAmount = Math.round(subtotal * 0.05); // 5% GST
+  const gstAmount = Math.round(subtotal * 0.05);
   const deliveryFee = subtotal >= 300 || subtotal === 0 ? 0 : 40;
   const grandTotal = subtotal + gstAmount + deliveryFee;
 
   const handlePayNow = () => {
     if (!nearestMatch.isDeliverable) {
-      alert(`Cannot process checkout: Delivery address is outside our kitchen service zones (${nearestMatch.distanceKm} km away). Please select a deliverable location.`);
+      alert(`Delivery address is outside our kitchen service zones (${nearestMatch.distanceKm} km away). Please select a deliverable location.`);
       return;
     }
-
     if (activeTab === 'upi_id' && !upiIdInput.includes('@')) {
       alert('Please enter a valid UPI ID (e.g. name@upi)');
       return;
@@ -56,258 +54,370 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
           estimatedDeliveryMin: nearestMatch.totalEtaMin,
           date: new Date().toLocaleString()
         });
-        onClose();
         setPaymentDone(false);
-      }, 1200);
-    }, 2000);
+      }, 1500);
+    }, 2200);
+  };
+
+  const tabBtnStyle = (tabId) => ({
+    padding: '0.7rem 1rem',
+    fontFamily: 'var(--font-display)',
+    fontSize: '0.8rem',
+    border: 'var(--border-thick)',
+    backgroundColor: activeTab === tabId ? 'var(--yellow)' : 'var(--white)',
+    color: 'var(--black)',
+    cursor: 'pointer',
+    boxShadow: activeTab === tabId ? '3px 3px 0px var(--black)' : 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.3rem',
+    flex: 1,
+    textAlign: 'center'
+  });
+
+  const inputStyle = {
+    width: '100%',
+    padding: '0.7rem 1rem',
+    fontFamily: 'var(--font-body)',
+    fontSize: '0.9rem',
+    fontWeight: 700,
+    border: 'var(--border-thick)',
+    backgroundColor: 'var(--cream)',
+    outline: 'none',
+    boxSizing: 'border-box'
   };
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+      <div
+        key="payment-backdrop"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(8px)',
+          padding: '1rem'
+        }}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl bg-[var(--cream)] border-4 border-black shadow-[10px_10px_0px_#111] overflow-hidden flex flex-col max-h-[92vh]"
+          style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '640px',
+            maxHeight: '92vh',
+            backgroundColor: 'var(--cream)',
+            border: '4px solid var(--black)',
+            boxShadow: '10px 10px 0px var(--black)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
           {/* Header */}
-          <div className="bg-[var(--green)] border-b-4 border-black p-4 text-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[var(--yellow)] text-black border-2 border-black flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_#111]">
+          <div
+            style={{
+              backgroundColor: 'var(--green, #16a34a)',
+              borderBottom: '4px solid var(--black)',
+              padding: '1.2rem 1.5rem',
+              color: 'var(--white)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: 'var(--yellow)',
+                  color: 'var(--black)',
+                  border: '2px solid var(--black)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 900,
+                  fontSize: '1.2rem',
+                  boxShadow: '2px 2px 0px var(--black)'
+                }}
+              >
                 🔒
               </div>
               <div>
-                <h2 className="font-black text-xl tracking-tight uppercase leading-none text-white">
-                  CHECKOUT & PAYMENT GATEWAY
+                <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.2rem', textTransform: 'uppercase' }}>
+                  CHECKOUT & PAYMENT
                 </h2>
-                <p className="text-xs font-bold text-[var(--yellow)] mt-0.5">
+                <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--yellow)' }}>
                   100% SECURE ENCRYPTED TRANSACTION
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-10 h-10 bg-white text-black border-2 border-black font-extrabold text-lg shadow-[2px_2px_0px_#111] hover:bg-black hover:text-white transition-all flex items-center justify-center"
+              style={{
+                width: '40px',
+                height: '40px',
+                backgroundColor: 'var(--white)',
+                color: 'var(--black)',
+                border: '2px solid var(--black)',
+                fontWeight: 900,
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                boxShadow: '2px 2px 0px var(--black)'
+              }}
             >
-              <X className="w-5 h-5" />
+              ✕
             </button>
           </div>
 
+          {/* Processing State */}
           {processing ? (
-            /* Processing State Overlay */
-            <div className="p-12 text-center flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="w-16 h-16 animate-spin text-[var(--red)]" />
-              <h3 className="font-black text-2xl uppercase">PROCESSING PAYMENT...</h3>
-              <p className="text-sm font-bold text-gray-600">Contacting bank & verifying transaction token...</p>
-              <div className="bg-[var(--yellow)] border-2 border-black px-4 py-2 font-black text-sm">
-                PLEASE DO NOT REFRESH OR CLOSE THIS WINDOW ⚠️
+            <div style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.2rem' }}>
+              <div style={{ width: '60px', height: '60px', border: '4px solid var(--red)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', margin: 0 }}>PROCESSING PAYMENT...</h3>
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#666' }}>Contacting bank & verifying transaction token...</p>
+              <div style={{ backgroundColor: 'var(--yellow)', border: '2px solid var(--black)', padding: '0.6rem 1rem', fontFamily: 'var(--font-display)', fontSize: '0.8rem' }}>
+                ⚠️ PLEASE DO NOT REFRESH OR CLOSE THIS WINDOW
               </div>
             </div>
           ) : paymentDone ? (
-            /* Payment Success Overlay */
-            <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-              <CheckCircle2 className="w-20 h-20 text-[var(--green)] animate-bounce" />
-              <h3 className="font-black text-3xl text-[var(--green)] uppercase">PAYMENT SUCCESSFUL! 🎉</h3>
-              <p className="text-base font-extrabold text-black">₹{grandTotal} RECEIVED. CREATING ORDER & ASSIGNING RIDER.</p>
+            <div style={{ padding: '4rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '4rem' }}>✅</span>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', color: 'var(--green, #16a34a)', margin: 0 }}>PAYMENT SUCCESSFUL! 🎉</h3>
+              <p style={{ fontWeight: 800, fontSize: '1rem' }}>₹{grandTotal} RECEIVED. CREATING ORDER & ASSIGNING RIDER.</p>
             </div>
           ) : (
-            <div className="p-4 space-y-4 overflow-y-auto flex-1">
-              
-              {/* Delivery Destination & Serving Kitchen Match Card */}
-              <div className="bg-white border-3 border-black p-3.5 shadow-[3px_3px_0px_#111] space-y-2">
-                <div className="flex items-center justify-between text-xs font-black uppercase text-gray-500">
+            /* Main Checkout Content */
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+
+              {/* Delivery & Kitchen Match */}
+              <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1rem', boxShadow: '3px 3px 0px var(--black)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontFamily: 'var(--font-display)', color: '#888', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
                   <span>DELIVERY DESTINATION & MATCHED KITCHEN</span>
-                  <span className="text-[var(--green)]">✅ ZONE VERIFIED</span>
+                  <span style={{ color: 'var(--green, #16a34a)' }}>✅ ZONE VERIFIED</span>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div className="bg-[var(--cream)] p-2.5 border-2 border-black">
-                    <span className="font-black text-[var(--red)] block text-[10px]">DELIVERING TO:</span>
-                    <span className="font-extrabold text-black block truncate">{deliveryLocation?.address || 'Connaught Place, New Delhi'}</span>
-                    <span className="text-[10px] text-gray-600">Label: {deliveryLocation?.label || 'HOME'}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  <div style={{ backgroundColor: 'var(--cream)', padding: '0.7rem', border: '2px solid var(--black)' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem', color: 'var(--red)', display: 'block' }}>DELIVERING TO:</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.8rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deliveryLocation?.address || 'Connaught Place, New Delhi'}</span>
+                    <span style={{ fontSize: '0.65rem', color: '#888' }}>Label: {deliveryLocation?.label || 'HOME'}</span>
                   </div>
-
-                  <div className="bg-[var(--cream)] p-2.5 border-2 border-black">
-                    <span className="font-black text-[var(--green)] block text-[10px]">PREPARED BY:</span>
-                    <span className="font-extrabold text-black block truncate">{nearestMatch.selectedKitchen.name}</span>
-                    <span className="text-[10px] text-gray-600">ETA: ~{nearestMatch.totalEtaMin} min ({nearestMatch.distanceKm} km away)</span>
+                  <div style={{ backgroundColor: 'var(--cream)', padding: '0.7rem', border: '2px solid var(--black)' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem', color: 'var(--green, #16a34a)', display: 'block' }}>PREPARED BY:</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.8rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nearestMatch.selectedKitchen.name}</span>
+                    <span style={{ fontSize: '0.65rem', color: '#888' }}>ETA: ~{nearestMatch.totalEtaMin} min ({nearestMatch.distanceKm} km)</span>
                   </div>
                 </div>
               </div>
 
-              {/* Itemized Order Breakdown Box */}
-              <div className="bg-white border-3 border-black p-3.5 shadow-[3px_3px_0px_#111]">
-                <div className="text-xs font-black text-gray-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+              {/* Order Summary */}
+              <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1rem', boxShadow: '3px 3px 0px var(--black)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontFamily: 'var(--font-display)', color: '#888', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
                   <span>ORDER SUMMARY ({cartItems.length} ITEMS)</span>
-                  <span className="text-[var(--red)] font-extrabold">GST INVOICE READY</span>
+                  <span style={{ color: 'var(--red)', fontWeight: 800 }}>GST INVOICE READY</span>
                 </div>
-                <div className="space-y-1.5 border-b-2 border-dashed border-gray-300 pb-2 max-h-28 overflow-y-auto text-xs font-extrabold">
+                <div style={{ borderBottom: '2px dashed #ccc', paddingBottom: '0.6rem', marginBottom: '0.6rem', maxHeight: '120px', overflowY: 'auto' }}>
                   {cartItems.map((item, idx) => (
-                    <div key={idx} className="flex justify-between">
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, marginBottom: '0.3rem' }}>
                       <span>{item.quantity}x {item.name}</span>
-                      <span>{item.price}</span>
+                      <span>{String(item.price).includes('₹') ? item.price : `₹${String(item.price).replace(/[^0-9]/g, '')}`}</span>
                     </div>
                   ))}
                 </div>
-                <div className="pt-2 text-xs font-bold space-y-1">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span>₹{subtotal}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>GST Tax (5%)</span>
-                    <span>₹{gstAmount}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Delivery Fee</span>
-                    <span>{deliveryFee === 0 ? 'FREE 🚚' : `₹${deliveryFee}`}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-black text-black pt-1 border-t-2 border-black">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Subtotal</span><span>₹{subtotal}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>GST Tax (5%)</span><span>₹{gstAmount}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Delivery Fee</span><span>{deliveryFee === 0 ? 'FREE 🚚' : `₹${deliveryFee}`}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontSize: '1.1rem', borderTop: '2px solid var(--black)', paddingTop: '0.4rem', marginTop: '0.3rem' }}>
                     <span>GRAND TOTAL</span>
-                    <span className="text-[var(--red)] font-black text-lg">₹{grandTotal}</span>
+                    <span style={{ color: 'var(--red)', fontWeight: 900, fontSize: '1.2rem' }}>₹{grandTotal}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Payment Methods Tabs */}
-              <div>
-                <div className="text-xs font-black uppercase text-gray-800 mb-2">
+              {/* Payment Method Tabs */}
+              <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1rem', boxShadow: '3px 3px 0px var(--black)' }}>
+                <div style={{ fontSize: '0.7rem', fontFamily: 'var(--font-display)', color: '#888', textTransform: 'uppercase', marginBottom: '0.8rem' }}>
                   SELECT PAYMENT METHOD
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                  <button
-                    onClick={() => setActiveTab('upi_qr')}
-                    className={`p-2.5 border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#111] transition-all flex flex-col items-center gap-1 ${
-                      activeTab === 'upi_qr' ? 'bg-[var(--yellow)] text-black' : 'bg-white hover:bg-gray-100'
-                    }`}
-                  >
-                    <QrCode className="w-5 h-5" />
-                    <span>UPI SCAN & PAY</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <button onClick={() => setActiveTab('upi_qr')} style={tabBtnStyle('upi_qr')}>
+                    <span style={{ fontSize: '1.2rem' }}>📱</span><span>UPI SCAN</span>
                   </button>
-                  <button
-                    onClick={() => setActiveTab('upi_id')}
-                    className={`p-2.5 border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#111] transition-all flex flex-col items-center gap-1 ${
-                      activeTab === 'upi_id' ? 'bg-[var(--yellow)] text-black' : 'bg-white hover:bg-gray-100'
-                    }`}
-                  >
-                    <Smartphone className="w-5 h-5" />
-                    <span>UPI VPA ID</span>
+                  <button onClick={() => setActiveTab('upi_id')} style={tabBtnStyle('upi_id')}>
+                    <span style={{ fontSize: '1.2rem' }}>📲</span><span>UPI ID</span>
                   </button>
-                  <button
-                    onClick={() => setActiveTab('card')}
-                    className={`p-2.5 border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#111] transition-all flex flex-col items-center gap-1 ${
-                      activeTab === 'card' ? 'bg-[var(--yellow)] text-black' : 'bg-white hover:bg-gray-100'
-                    }`}
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    <span>DEBIT / CREDIT</span>
+                  <button onClick={() => setActiveTab('card')} style={tabBtnStyle('card')}>
+                    <span style={{ fontSize: '1.2rem' }}>💳</span><span>CARD</span>
                   </button>
-                  <button
-                    onClick={() => setActiveTab('cod')}
-                    className={`p-2.5 border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_#111] transition-all flex flex-col items-center gap-1 ${
-                      activeTab === 'cod' ? 'bg-[var(--yellow)] text-black' : 'bg-white hover:bg-gray-100'
-                    }`}
-                  >
-                    <DollarSign className="w-5 h-5" />
-                    <span>CASH ON DELIVERY</span>
+                  <button onClick={() => setActiveTab('cod')} style={tabBtnStyle('cod')}>
+                    <span style={{ fontSize: '1.2rem' }}>💵</span><span>COD</span>
                   </button>
                 </div>
-              </div>
 
-              {/* Tab 1: UPI QR Code */}
-              {activeTab === 'upi_qr' && (
-                <div className="bg-white border-3 border-black p-4 shadow-[3px_3px_0px_#111] text-center flex flex-col items-center space-y-3">
-                  <div className="border-4 border-black p-2 bg-white shadow-[3px_3px_0px_#111]">
-                    <img
-                      src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=eatnaked@upi&pn=EATnakedKitchen&am=100&cu=INR"
-                      alt="UPI QR Code"
-                      className="w-36 h-36 object-contain"
-                    />
+                {/* UPI QR Tab */}
+                {activeTab === 'upi_qr' && (
+                  <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
+                    <div style={{ border: '4px solid var(--black)', padding: '0.5rem', backgroundColor: 'var(--white)', boxShadow: '3px 3px 0px var(--black)' }}>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=eatnaked@upi&pn=EATnakedKitchen&am=${grandTotal}&cu=INR`}
+                        alt="UPI QR Code"
+                        style={{ width: '140px', height: '140px', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem' }}>
+                      SCAN WITH ANY UPI APP (GPAY, PHONEPE, PAYTM, CRED)
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#888' }}>
+                      Amount: <strong style={{ color: 'var(--red)' }}>₹{grandTotal}</strong> • Merchant: EATnaked Kitchen
+                    </div>
                   </div>
-                  <div className="text-xs font-black text-black">
-                    SCAN WITH ANY UPI APP (GPAY, PHONEPE, PAYTM, CRED)
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Tab 2: UPI ID */}
-              {activeTab === 'upi_id' && (
-                <div className="bg-white border-3 border-black p-4 shadow-[3px_3px_0px_#111] space-y-3">
-                  <label className="text-xs font-black uppercase text-black block">ENTER YOUR UPI ID (VPA)</label>
-                  <div className="flex gap-2">
+                {/* UPI ID Tab */}
+                {activeTab === 'upi_id' && (
+                  <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem' }}>ENTER YOUR UPI VPA ID</label>
                     <input
                       type="text"
                       value={upiIdInput}
                       onChange={(e) => setUpiIdInput(e.target.value)}
-                      placeholder="e.g. 9876543210@ybl or name@okicici"
-                      className="flex-1 p-3 bg-[var(--cream)] border-2 border-black font-extrabold text-sm focus:outline-none"
+                      placeholder="yourname@upi / 9876543210@paytm"
+                      style={inputStyle}
                     />
+                    <p style={{ fontSize: '0.7rem', color: '#888', margin: 0 }}>We'll send a payment request to your UPI app.</p>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Tab 3: Card Payment */}
-              {activeTab === 'card' && (
-                <div className="bg-white border-3 border-black p-4 shadow-[3px_3px_0px_#111] space-y-3">
-                  <div>
-                    <label className="text-[10px] font-black uppercase block mb-1">CARDHOLDER NAME</label>
+                {/* Card Tab */}
+                {activeTab === 'card' && (
+                  <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem' }}>CARD NUMBER</label>
                     <input
                       type="text"
-                      placeholder="Rahul Sharma"
-                      value={cardDetails.name}
-                      onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                      className="w-full p-2.5 bg-[var(--cream)] border-2 border-black text-xs font-extrabold focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase block mb-1">CARD NUMBER</label>
-                    <input
-                      type="text"
-                      placeholder="4532 •••• •••• 8829"
                       value={cardDetails.number}
-                      onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
-                      className="w-full p-2.5 bg-[var(--cream)] border-2 border-black text-xs font-extrabold focus:outline-none"
+                      onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value.replace(/\D/g, '').slice(0, 16) })}
+                      placeholder="1234 5678 9012 3456"
+                      style={inputStyle}
                     />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                      <div>
+                        <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem' }}>EXPIRY</label>
+                        <input
+                          type="text"
+                          value={cardDetails.expiry}
+                          onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
+                          placeholder="MM/YY"
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem' }}>CVV</label>
+                        <input
+                          type="password"
+                          value={cardDetails.cvv}
+                          onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value.slice(0, 4) })}
+                          placeholder="•••"
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem' }}>NAME</label>
+                        <input
+                          type="text"
+                          value={cardDetails.name}
+                          onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
+                          placeholder="Name"
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Tab 4: Cash on Delivery */}
-              {activeTab === 'cod' && (
-                <div className="bg-amber-50 border-3 border-black p-4 shadow-[3px_3px_0px_#111] space-y-2">
-                  <div className="flex items-center gap-2 font-black text-sm text-black">
-                    <AlertCircle className="w-5 h-5 text-[var(--red)] shrink-0" />
-                    CASH ON DELIVERY (COD) SELECTED
+                {/* COD Tab */}
+                {activeTab === 'cod' && (
+                  <div style={{ backgroundColor: '#FFFBEB', border: 'var(--border-thick)', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      ⚠️ CASH ON DELIVERY (COD) SELECTED
+                    </div>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#555', margin: 0 }}>
+                      Pay <strong style={{ color: 'var(--red)' }}>₹{grandTotal}</strong> in cash or scan driver QR code upon arrival at your doorstep.
+                    </p>
                   </div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    Pay <span className="font-extrabold text-[var(--red)]">₹{grandTotal}</span> in cash or scan driver QR code upon arrival at your doorstep.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
           {/* Footer Pay Button */}
           {!processing && !paymentDone && (
-            <div className="bg-white border-t-4 border-black p-4 flex items-center justify-between gap-4">
+            <div
+              style={{
+                backgroundColor: 'var(--white)',
+                borderTop: '4px solid var(--black)',
+                padding: '1rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem'
+              }}
+            >
               <button
                 onClick={onClose}
-                className="w-1/3 py-3 bg-gray-200 text-black border-3 border-black font-extrabold text-sm uppercase shadow-[3px_3px_0px_#111] hover:bg-black hover:text-white transition-all"
+                style={{
+                  width: '35%',
+                  padding: '0.9rem',
+                  backgroundColor: '#e5e5e5',
+                  color: 'var(--black)',
+                  border: 'var(--border-thick)',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  boxShadow: '3px 3px 0px var(--black)'
+                }}
               >
                 CANCEL
               </button>
               <button
                 onClick={handlePayNow}
-                className="w-2/3 py-3.5 bg-[var(--red)] text-white border-3 border-black font-black text-base uppercase shadow-[4px_4px_0px_#111] hover:bg-[var(--yellow)] hover:text-black transition-all flex items-center justify-center gap-2"
+                style={{
+                  width: '65%',
+                  padding: '1rem',
+                  backgroundColor: 'var(--red)',
+                  color: 'var(--white)',
+                  border: 'var(--border-thick)',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  boxShadow: '4px 4px 0px var(--black)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}
               >
                 <span>PAY ₹{grandTotal} NOW</span>
-                <ArrowRight className="w-5 h-5" />
+                <span>→</span>
               </button>
             </div>
           )}
         </motion.div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </AnimatePresence>
   );
 }

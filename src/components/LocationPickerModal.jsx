@@ -1,594 +1,217 @@
-import { useState, useEffect } from 'react';
-import GoogleMapsView from './GoogleMapsView';
-import { calculateHaversineDistance, estimateTravelTimeMin } from '../services/deliveryZoneService';
-import { getSavedAddresses, saveAddress } from '../services/savedAddressesService';
-import { KITCHENS_DATABASE } from '../data/kitchens';
+import { useState, useEffect, useRef } from 'react';
+import { useCart } from '../context/CartContext';
+import { loadGoogleMapsScript } from '../services/googleMapsLoader';
 
-export default function LocationPickerModal({
-  isOpen,
-  onClose,
-  currentAddress,
-  onSaveLocation,
-  onSelectKitchen
-}) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState({
-    address: currentAddress || 'Connaught Place, Inner Circle, New Delhi 110001',
-    lat: 28.6315,
-    lng: 77.2167,
-    label: 'HOME',
-    flatNo: '',
-    landmark: '',
-    instructions: ''
-  });
+export default function LocationPickerModal({ isOpen, onClose }) {
+  const { deliveryLocation, setDeliveryLocation } = useCart();
+  
+  const [address, setAddress] = useState(deliveryLocation?.address || '');
+  const [lat, setLat] = useState(deliveryLocation?.lat || null);
+  const [lng, setLng] = useState(deliveryLocation?.lng || null);
+  const [city, setCity] = useState(deliveryLocation?.city || '');
+  
+  const [loadingMap, setLoadingMap] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  const [error, setError] = useState('');
 
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  const [step, setStep] = useState('select_location'); // 'select_location' | 'select_kitchen'
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedKitchenId, setSelectedKitchenId] = useState(null);
+  const inputRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
-      setSavedAddresses(getSavedAddresses());
-      setStep('select_location');
+      // Sync state if reopened
+      if (deliveryLocation) {
+        setAddress(deliveryLocation.address);
+        setLat(deliveryLocation.lat);
+        setLng(deliveryLocation.lng);
+        setCity(deliveryLocation.city || '');
+      } else {
+        setAddress('');
+        setLat(null);
+        setLng(null);
+        setCity('');
+      }
+      initAutocomplete();
     }
-  }, [isOpen]);
+  }, [isOpen, deliveryLocation]);
 
-  if (!isOpen) return null;
+  const initAutocomplete = async () => {
+    try {
+      setLoadingMap(true);
+      const googleMaps = await loadGoogleMapsScript();
+      
+      if (inputRef.current && !autocompleteRef.current) {
+        autocompleteRef.current = new googleMaps.places.Autocomplete(inputRef.current, {
+          fields: ['formatted_address', 'geometry', 'address_components'],
+        });
 
-  // Calculate nearby kitchens evaluation when in step 2 (select_kitchen)
-  const evaluatedKitchens = KITCHENS_DATABASE.map((kitchen) => {
-    const distKm = calculateHaversineDistance(selectedLocation.lat, selectedLocation.lng, kitchen.lat, kitchen.lng);
-    const distFormatted = parseFloat(distKm.toFixed(1));
-    const travelMin = estimateTravelTimeMin(distKm);
-    const totalEtaMin = kitchen.basePrepTimeMin + travelMin + 3;
-    const inRange = distKm <= kitchen.serviceRadiusKm;
+        autocompleteRef.current.addListener('place_changed', () => {
+          const place = autocompleteRef.current.getPlace();
+          
+          if (!place.geometry || !place.geometry.location) {
+            setError('Please select a valid location from the dropdown.');
+            return;
+          }
 
-    return {
-      ...kitchen,
-      distanceKm: distFormatted,
-      travelTimeMin: travelMin,
-      totalEtaMin,
-      etaRangeText: `${totalEtaMin}–${totalEtaMin + 5} min`,
-      inRange,
-      statusLabel: inRange ? 'Open · Delivering now' : 'Outside delivery range'
-    };
-  }).sort((a, b) => {
-    if (a.inRange && !b.inRange) return -1;
-    if (!a.inRange && b.inRange) return 1;
-    return a.distanceKm - b.distanceKm;
-  });
+          setError('');
+          const newLat = place.geometry.location.lat();
+          const newLng = place.geometry.location.lng();
+          const newAddr = place.formatted_address;
+          
+          let newCity = '';
+          place.address_components?.forEach(c => {
+            if (c.types.includes('locality')) newCity = c.long_name;
+          });
 
-  // Handle "Use my current location"
-  const handleUseCurrentLocation = () => {
+          setLat(newLat);
+          setLng(newLng);
+          setAddress(newAddr);
+          setCity(newCity);
+        });
+      }
+    } catch (err) {
+      if (err.message === 'GOOGLE_MAPS_KEY_MISSING') {
+        setError('Google Maps API key is missing. Please add VITE_GOOGLE_MAPS_API_KEY to your .env file.');
+      } else {
+        setError('Failed to load Google Maps. Please check your connection.');
+      }
+    } finally {
+      setLoadingMap(false);
+    }
+  };
+
+  const handleUseCurrentLocation = async () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      setError('Geolocation is not supported by your browser.');
       return;
     }
 
-    setIsDetectingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const newLoc = {
-          address: `GPS Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-          lat: latitude,
-          lng: longitude,
-          label: 'GPS LOCATION',
-          flatNo: '',
-          landmark: '',
-          instructions: ''
-        };
+    setDetecting(true);
+    setError('');
 
-        // Reverse Geocoding
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data && data.display_name) {
-              newLoc.address = data.display_name;
-            }
-            setSelectedLocation(newLoc);
-            setIsDetectingLocation(false);
-          })
-          .catch(() => {
-            setSelectedLocation(newLoc);
-            setIsDetectingLocation(false);
-          });
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          setLat(latitude);
+          setLng(longitude);
+
+          const googleMaps = await loadGoogleMapsScript();
+          const geocoder = new googleMaps.Geocoder();
+          
+          const response = await geocoder.geocode({ location: { lat: latitude, lng: longitude } });
+          
+          if (response.results && response.results.length > 0) {
+            const place = response.results[0];
+            setAddress(place.formatted_address);
+            let newCity = '';
+            place.address_components?.forEach(c => {
+              if (c.types.includes('locality')) newCity = c.long_name;
+            });
+            setCity(newCity);
+          } else {
+            setAddress(`GPS Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+          }
+        } catch (err) {
+          setError('Could not get formatted address, but coordinates were saved.');
+          setAddress(`GPS Location (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
+        } finally {
+          setDetecting(false);
+        }
       },
       (err) => {
-        setIsDetectingLocation(false);
-        alert(`Location permission denied (${err.message}). Please search manually.`);
+        setDetecting(false);
+        if (err.code === 1) setError('Location access denied. Please search manually.');
+        else setError('Failed to detect location. Please try again or search manually.');
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { timeout: 10000, enableHighAccuracy: true }
     );
   };
 
-  // Perform search via Google Maps Geocoder if available, or Nominatim API
-  const handleSearchInputChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (query.trim().length > 2) {
-      setIsSearching(true);
-
-      if (window.google && window.google.maps && window.google.maps.Geocoder) {
-        const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ address: query }, (results, status) => {
-          if (status === 'OK' && Array.isArray(results) && results.length > 0) {
-            setSearchSuggestions(
-              results.slice(0, 5).map((item) => ({
-                display_name: item.formatted_address,
-                lat: item.geometry.location.lat(),
-                lng: item.geometry.location.lng()
-              }))
-            );
-            setIsSearching(false);
-          } else {
-            fallbackSearch(query);
-          }
-        });
-      } else {
-        fallbackSearch(query);
-      }
-    } else {
-      setSearchSuggestions([]);
-      setIsSearching(false);
-    }
-  };
-
-  const fallbackSearch = (query) => {
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setSearchSuggestions(
-            data.slice(0, 5).map((item) => ({
-              display_name: item.display_name,
-              lat: parseFloat(item.lat),
-              lng: parseFloat(item.lon)
-            }))
-          );
-        }
-        setIsSearching(false);
-      })
-      .catch(() => {
-        setIsSearching(false);
-      });
-  };
-
-  const handleSelectSuggestion = (sug) => {
-    setSelectedLocation({
-      ...selectedLocation,
-      address: sug.display_name,
-      lat: sug.lat,
-      lng: sug.lng
-    });
-    setSearchSuggestions([]);
-    setSearchQuery('');
-  };
-
-  const handleSelectSavedAddress = (saved) => {
-    setSelectedLocation({
-      address: saved.address,
-      lat: saved.lat,
-      lng: saved.lng,
-      label: saved.label,
-      flatNo: saved.flatNo || '',
-      landmark: saved.landmark || '',
-      instructions: saved.instructions || ''
-    });
-  };
-
-  const handleConfirmLocation = () => {
-    setStep('select_kitchen');
-  };
-
-  const handleSelectKitchenCard = (kitchen) => {
-    if (!kitchen.inRange) {
-      alert(`This kitchen is outside your delivery area (${kitchen.distanceKm} km). Please select a kitchen marked in green.`);
+  const handleConfirm = () => {
+    if (!lat || !lng || !address) {
+      setError('Please search and select a valid location first.');
       return;
     }
-
-    const finalLoc = {
-      ...selectedLocation,
-      kitchen,
-      distanceKm: kitchen.distanceKm,
-      etaMin: kitchen.totalEtaMin
-    };
-
-    saveAddress(finalLoc);
-    onSaveLocation(finalLoc);
-    if (onSelectKitchen) onSelectKitchen(kitchen);
+    
+    setDeliveryLocation({
+      address,
+      lat,
+      lng,
+      city,
+      label: 'HOME'
+    });
+    
     onClose();
-
-    // Smooth scroll to menu
-    const menuEl = document.getElementById('dishes') || document.getElementById('menu');
-    if (menuEl) {
-      menuEl.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
-        zIndex: 2000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        backdropFilter: 'blur(4px)'
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'var(--cream)',
-          border: 'var(--border-thick)',
-          boxShadow: '12px 12px 0px var(--black)',
-          width: '100%',
-          maxWidth: '850px',
-          maxHeight: '92vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          borderRadius: '4px'
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            backgroundColor: 'var(--black)',
-            color: 'var(--cream)',
-            padding: '1.2rem 1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: 'var(--border-thick)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>📍</span>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--yellow)', fontFamily: 'var(--font-display)' }}>
-                {step === 'select_location' ? 'WHERE SHOULD WE DELIVER?' : 'KITCHENS NEAR YOU'}
-              </h3>
-              <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>
-                {step === 'select_location'
-                  ? 'Enter your delivery address or confirm your pin on the map'
-                  : `Select the nearest EATnaked Kitchen Hub for ${selectedLocation.address.split(',')[0]}`}
-              </p>
-            </div>
-          </div>
+  if (!isOpen) return null;
 
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--cream)',
-              fontSize: '1.5rem',
-              fontWeight: 900,
-              cursor: 'pointer'
-            }}
-          >
-            ✕
-          </button>
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      <div style={{ backgroundColor: 'var(--cream)', border: 'var(--border-thick)', padding: '2rem', maxWidth: '500px', width: '100%', boxShadow: '8px 8px 0px var(--black)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', margin: 0, color: 'var(--red)' }}>
+            WHERE TO?
+          </h2>
+          {deliveryLocation && (
+            <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', padding: '0 0.5rem' }}>×</button>
+          )}
         </div>
 
-        {/* STEP 1: SELECT DELIVERY LOCATION */}
-        {step === 'select_location' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '1.2rem 1.5rem 0.5rem' }}>
-              {/* Search Bar + Geolocation Button */}
-              <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, position: 'relative', minWidth: '260px' }}>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchInputChange}
-                    placeholder="🔍 Search delivery location (e.g. Connaught Place, Saket, Cyber City...)"
-                    style={{
-                      width: '100%',
-                      padding: '0.8rem 1rem',
-                      fontSize: '0.95rem',
-                      fontFamily: 'var(--font-body)',
-                      border: 'var(--border-thick)',
-                      backgroundColor: 'var(--white)',
-                      boxSizing: 'border-box'
-                    }}
-                  />
+        <p style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: '#333' }}>
+          Set your delivery location to see restaurants near you.
+        </p>
 
-                  {isSearching && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--red)', fontWeight: 800, marginTop: '0.2rem' }}>
-                      Searching locations...
-                    </div>
-                  )}
-
-                  {/* Suggestions Dropdown */}
-                  {searchSuggestions.length > 0 && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        backgroundColor: 'var(--white)',
-                        border: 'var(--border-thick)',
-                        borderTop: 'none',
-                        zIndex: 50,
-                        boxShadow: '4px 4px 0px var(--black)'
-                      }}
-                    >
-                      {searchSuggestions.map((sug, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => handleSelectSuggestion(sug)}
-                          style={{
-                            padding: '0.8rem 1rem',
-                            borderBottom: '1px solid #ddd',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.6rem'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--cream)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--white)')}
-                        >
-                          <span>📍</span>
-                          <span>{sug.display_name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleUseCurrentLocation}
-                  disabled={isDetectingLocation}
-                  className="btn-editorial"
-                  style={{
-                    backgroundColor: 'var(--yellow)',
-                    color: 'var(--black)',
-                    padding: '0.8rem 1.2rem',
-                    fontSize: '0.85rem',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  📍 {isDetectingLocation ? 'LOCATING...' : 'USE MY CURRENT LOCATION'}
-                </button>
-              </div>
-
-              {/* Saved Addresses quick bar */}
-              {savedAddresses.length > 0 && (
-                <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', alignSelf: 'center', whiteSpace: 'nowrap' }}>
-                    SAVED:
-                  </span>
-                  {savedAddresses.map((addr) => (
-                    <button
-                      key={addr.id}
-                      onClick={() => handleSelectSavedAddress(addr)}
-                      style={{
-                        padding: '0.4rem 0.8rem',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: '0.75rem',
-                        border: 'var(--border-thick)',
-                        backgroundColor: 'var(--white)',
-                        color: 'var(--black)',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        boxShadow: '2px 2px 0px var(--black)'
-                      }}
-                    >
-                      🏷️ {addr.label}: {addr.address.split(',')[0]}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Interactive Google Map with Draggable Pin */}
-            <div style={{ flex: 1, minHeight: '300px', position: 'relative' }}>
-              <GoogleMapsView
-                customerLocation={{ lat: selectedLocation.lat, lng: selectedLocation.lng, label: selectedLocation.label }}
-                showRoute={false}
-                minHeight="300px"
-                onMapClick={(coords) => {
-                  setSelectedLocation((prev) => ({ ...prev, lat: coords.lat, lng: coords.lng }));
-                }}
-              />
-            </div>
-
-            {/* Footer Address Confirmation Bar */}
-            <div
-              style={{
-                backgroundColor: 'var(--white)',
-                borderTop: 'var(--border-thick)',
-                padding: '1rem 1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '1rem',
-                flexWrap: 'wrap'
-              }}
-            >
-              <div style={{ flex: 1, minWidth: '240px' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--red)', display: 'block', textTransform: 'uppercase' }}>
-                  SELECTED DELIVERY ADDRESS:
-                </span>
-                <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: 'var(--black)' }}>
-                  {selectedLocation.address}
-                </p>
-              </div>
-
-              <button
-                onClick={handleConfirmLocation}
-                className="btn-editorial"
-                style={{
-                  backgroundColor: 'var(--red)',
-                  color: 'var(--white)',
-                  padding: '0.8rem 2rem',
-                  fontSize: '0.95rem'
-                }}
-              >
-                CONFIRM LOCATION & FIND KITCHENS →
-              </button>
-            </div>
+        {error && (
+          <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '0.8rem', border: '1px solid #c62828', marginBottom: '1rem', fontSize: '0.85rem' }}>
+            {error}
           </div>
         )}
 
-        {/* STEP 2, 3 & 4: NEARBY KITCHENS LIST & MAP VIEW */}
-        {step === 'select_kitchen' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            
-            {/* Top Back Bar */}
-            <div
-              style={{
-                backgroundColor: 'var(--cream)',
-                borderBottom: 'var(--border-thick)',
-                padding: '0.8rem 1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
-            >
-              <button
-                onClick={() => setStep('select_location')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.85rem',
-                  color: 'var(--red)',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline'
-                }}
-              >
-                ← CHANGE DELIVERY LOCATION
-              </button>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--black)' }}>
-                📍 Delivering to: <strong>{selectedLocation.address.split(',')[0]}</strong>
-              </span>
-            </div>
+        <button 
+          onClick={handleUseCurrentLocation}
+          disabled={detecting}
+          style={{ width: '100%', padding: '1rem', backgroundColor: 'var(--black)', color: 'var(--white)', border: 'var(--border-thick)', fontFamily: 'var(--font-display)', fontSize: '1rem', cursor: 'pointer', marginBottom: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+        >
+          {detecting ? 'DETECTING...' : (
+            <>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              USE MY CURRENT LOCATION
+            </>
+          )}
+        </button>
 
-            {/* Split Content: Kitchen Cards List + Map */}
-            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }} className="kitchen-selection-split">
-              
-              {/* Left Column: Kitchen Cards List */}
-              <div
-                style={{
-                  width: '380px',
-                  borderRight: 'var(--border-thick)',
-                  backgroundColor: 'var(--cream)',
-                  padding: '1.2rem',
-                  overflowY: 'auto'
-                }}
-                className="kitchen-cards-panel"
-              >
-                <h4 style={{ margin: '0 0 1rem', fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: 'var(--black)' }}>
-                  KITCHENS NEAR YOU ({evaluatedKitchens.length}):
-                </h4>
+        <div style={{ textAlign: 'center', margin: '1rem 0', fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: '#666' }}>
+          OR SEARCH ADDRESS
+        </div>
 
-                <div style={{ display: 'grid', gap: '1rem' }}>
-                  {evaluatedKitchens.map((k) => {
-                    const isSelected = selectedKitchenId === k.id;
-                    return (
-                      <div
-                        key={k.id}
-                        onClick={() => setSelectedKitchenId(k.id)}
-                        style={{
-                          backgroundColor: k.inRange ? 'var(--white)' : '#F8D7DA',
-                          border: 'var(--border-thick)',
-                          boxShadow: isSelected ? '5px 5px 0px var(--red)' : '3px 3px 0px var(--black)',
-                          padding: '1rem',
-                          cursor: k.inRange ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                          <span
-                            style={{
-                              backgroundColor: k.inRange ? 'var(--green)' : 'var(--red)',
-                              color: 'var(--white)',
-                              fontFamily: 'var(--font-display)',
-                              fontSize: '0.65rem',
-                              padding: '0.2rem 0.5rem'
-                            }}
-                          >
-                            {k.inRange ? '🟢 OPEN · DELIVERING NOW' : '🔴 OUTSIDE RANGE'}
-                          </span>
-                          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', color: 'var(--black)' }}>
-                            ⭐ {k.rating}
-                          </span>
-                        </div>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <input 
+            ref={inputRef}
+            type="text" 
+            placeholder={loadingMap ? "Loading maps..." : "Enter your street address or area..."}
+            defaultValue={address}
+            disabled={loadingMap}
+            style={{ width: '100%', padding: '1rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)', fontSize: '1rem' }}
+          />
+        </div>
 
-                        <h4 style={{ margin: '0.2rem 0', fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--black)' }}>
-                          {k.name}
-                        </h4>
-
-                        <p style={{ margin: '0 0 0.8rem', fontSize: '0.8rem', color: '#555' }}>
-                          {k.distanceKm} km away · ~{k.etaRangeText} ETA
-                        </p>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectKitchenCard(k);
-                          }}
-                          disabled={!k.inRange}
-                          className="btn-editorial"
-                          style={{
-                            width: '100%',
-                            backgroundColor: k.inRange ? 'var(--red)' : '#888',
-                            color: 'var(--white)',
-                            padding: '0.6rem',
-                            fontSize: '0.85rem',
-                            textAlign: 'center'
-                          }}
-                        >
-                          {k.inRange ? 'VIEW MENU →' : 'UNAVAILABLE AT LOCATION'}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right Column: Google Maps View */}
-              <div style={{ flex: 1, position: 'relative' }}>
-                <GoogleMapsView
-                  customerLocation={{ lat: selectedLocation.lat, lng: selectedLocation.lng, label: 'YOUR LOCATION' }}
-                  showRoute={false}
-                  minHeight="100%"
-                />
-              </div>
-
-            </div>
-
+        {address && lat && lng && (
+          <div style={{ padding: '1rem', backgroundColor: 'var(--white)', border: '1px solid #ddd', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.3rem' }}>SELECTED LOCATION:</div>
+            <div style={{ fontWeight: 'bold' }}>{address}</div>
           </div>
         )}
 
+        <button 
+          onClick={handleConfirm}
+          className="btn-editorial"
+          style={{ width: '100%', padding: '1.2rem', backgroundColor: 'var(--yellow)', color: 'var(--black)', fontSize: '1.2rem' }}
+        >
+          CONFIRM LOCATION →
+        </button>
       </div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .kitchen-selection-split {
-            flex-direction: column-reverse !important;
-          }
-          .kitchen-cards-panel {
-            width: 100% !important;
-            height: 55% !important;
-            border-right: none !important;
-            border-top: var(--border-thick) !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

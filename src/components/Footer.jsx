@@ -1,4 +1,4 @@
-export default function Footer() {
+export default function Footer({ onOpenSellerPortal }) {
   return (
     <footer
       style={{
@@ -9,10 +9,8 @@ export default function Footer() {
       }}
     >
       <div className="container-editorial">
-        
         {/* Top Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '3rem', paddingBottom: '4rem', borderBottom: '1px solid #333' }}>
-          
           {/* Brand Info */}
           <div style={{ gridColumn: 'span 5' }} className="footer-col">
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', color: 'var(--red)', marginBottom: '1rem' }}>
@@ -81,7 +79,48 @@ export default function Footer() {
               </button>
             </form>
           </div>
+        </div>
 
+        {/* RESTAURANT PARTNER / SELLER FOOTER BANNER */}
+        <div
+          style={{
+            marginTop: '3rem',
+            padding: '2rem',
+            backgroundColor: '#181818',
+            border: '2px solid var(--yellow)',
+            boxShadow: '6px 6px 0px var(--red)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1.2rem'
+          }}
+        >
+          <div>
+            <span style={{ backgroundColor: 'var(--yellow)', color: 'var(--black)', fontFamily: 'var(--font-display)', fontSize: '0.75rem', padding: '0.2rem 0.6rem', display: 'inline-block', marginBottom: '0.4rem' }}>
+              👨‍🍳 RESTAURANT PARTNER MARKETPLACE
+            </span>
+            <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: 'var(--cream)' }}>
+              OWN A RESTAURANT OR CLOUD KITCHEN?
+            </h3>
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.9rem', color: '#bbb' }}>
+              Register your restaurant on EATnaked to manage your menu, set prices, and receive live customer orders.
+            </p>
+          </div>
+          <button
+            onClick={onOpenSellerPortal}
+            className="btn-editorial"
+            style={{
+              backgroundColor: 'var(--yellow)',
+              color: 'var(--black)',
+              padding: '0.9rem 1.8rem',
+              fontSize: '0.95rem',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer'
+            }}
+          >
+            BECOME A RESTAURANT PARTNER / MERCHANT LOGIN →
+          </button>
         </div>
 
         {/* Bottom Giant Brand Banner */}
@@ -90,7 +129,6 @@ export default function Footer() {
             EATNAKED
           </h2>
         </div>
-
       </div>
 
       <style>{`

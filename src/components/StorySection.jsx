@@ -58,8 +58,8 @@ export default function StorySection() {
           }}
         >
           <img
-            src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=1200&q=80"
-            alt="Indian Master Chef Preparing Tandoori Dishes"
+            src="/assets/indian-master-chef.png"
+            alt="Indian Master Chef Preparing Authentic Food in Indian Cooking Style"
             style={{
               width: '100%',
               height: '100%',

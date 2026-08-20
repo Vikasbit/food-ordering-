@@ -333,23 +333,38 @@ export default function OrderTrackingModal({
               </a>
             </div>
 
-            {/* Order Items & Kitchen Info */}
+            {/* Food Origin Kitchen & Customer Location Card */}
             <div
               style={{
                 backgroundColor: 'var(--white)',
                 border: 'var(--border-thick)',
-                padding: '1rem'
+                padding: '1.2rem',
+                boxShadow: '3px 3px 0px var(--black)'
               }}
             >
-              <h5 style={{ margin: '0 0 0.6rem', fontFamily: 'var(--font-display)', fontSize: '0.8rem', color: 'var(--red)' }}>
-                DELIVERING FROM: {kitchenLoc.name}
-              </h5>
-              <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', opacity: 0.8 }}>
-                📍 {customerLoc.address}
-              </p>
+              <div style={{ marginBottom: '1rem', borderBottom: '1px dashed #ccc', paddingBottom: '0.8rem' }}>
+                <span style={{ backgroundColor: 'var(--black)', color: 'var(--yellow)', fontFamily: 'var(--font-display)', fontSize: '0.65rem', padding: '0.2rem 0.5rem', display: 'inline-block', marginBottom: '0.3rem' }}>
+                  🍳 FOOD ORIGIN KITCHEN
+                </span>
+                <h4 style={{ margin: '0.2rem 0', fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: 'var(--red)' }}>
+                  {kitchenLoc.name}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#555', lineHeight: 1.3 }}>
+                  📍 {kitchenLoc.address}
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '1rem', borderBottom: '1px dashed #ccc', paddingBottom: '0.8rem' }}>
+                <span style={{ backgroundColor: 'var(--yellow)', color: 'var(--black)', fontFamily: 'var(--font-display)', fontSize: '0.65rem', padding: '0.2rem 0.5rem', display: 'inline-block', marginBottom: '0.3rem' }}>
+                  🏠 DELIVERING TO
+                </span>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', fontWeight: 700, color: 'var(--black)' }}>
+                  {customerLoc.address}
+                </p>
+              </div>
 
               <h5 style={{ margin: '0 0 0.6rem', fontFamily: 'var(--font-display)', fontSize: '0.8rem' }}>
-                ORDER ITEMS ({cartItems.length}):
+                ORDERED ITEMS ({cartItems.length}):
               </h5>
               <div style={{ display: 'grid', gap: '0.4rem' }}>
                 {cartItems.map((item, idx) => (

@@ -10,7 +10,9 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [], items = []
 
   const handleCheckout = () => {
     onClose();
-    if (onPlaceOrder) {
+    if (onOpenCheckout) {
+      onOpenCheckout();
+    } else if (onPlaceOrder) {
       onPlaceOrder();
     }
   };
@@ -106,20 +108,20 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [], items = []
                           {item.name}
                         </h4>
                         <div style={{ color: 'var(--red)', fontWeight: 700, marginTop: '0.2rem' }}>
-                          {item.price.includes('₹') ? item.price : `₹${item.price.replace(/[^0-9]/g, '')}`}
+                          {String(item.price).includes('₹') ? item.price : `₹${String(item.price).replace(/[^0-9]/g, '')}`}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                         <div style={{ display: 'flex', border: 'var(--border-thick)', backgroundColor: 'var(--cream)' }}>
                           <button
-                            onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => onUpdateQuantity(item.id, -1)}
                             style={{ border: 'none', background: 'none', padding: '0.2rem 0.6rem', fontWeight: 900, cursor: 'pointer' }}
                           >
                             -
                           </button>
                           <span style={{ padding: '0.2rem 0.5rem', fontWeight: 700 }}>{item.quantity}</span>
                           <button
-                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => onUpdateQuantity(item.id, 1)}
                             style={{ border: 'none', background: 'none', padding: '0.2rem 0.6rem', fontWeight: 900, cursor: 'pointer' }}
                           >
                             +
@@ -145,15 +147,15 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [], items = []
                 <span style={{ color: 'var(--red)' }}>₹{subtotal.toFixed(0)}</span>
               </div>
               <button
-                disabled={cartItems.length === 0}
+                disabled={activeItems.length === 0}
                 onClick={handleCheckout}
                 className="btn-editorial"
                 style={{
                   width: '100%',
                   fontSize: '1.1rem',
                   padding: '1rem',
-                  opacity: cartItems.length === 0 ? 0.5 : 1,
-                  cursor: cartItems.length === 0 ? 'not-allowed' : 'pointer'
+                  opacity: activeItems.length === 0 ? 0.5 : 1,
+                  cursor: activeItems.length === 0 ? 'not-allowed' : 'pointer'
                 }}
               >
                 PROCEED TO CHECKOUT & TRACK ORDER 🛵

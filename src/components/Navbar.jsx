@@ -86,7 +86,7 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLo
             ))}
           </nav>
 
-          {/* RIGHT: Location + Seller Portal + Orders + Auth + Cart */}
+          {/* RIGHT: Location + Account Auth + Orders + View Bag */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap' }}>
             <button
               onClick={onOpenLocationPicker}
@@ -111,23 +111,6 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLo
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {deliveryLocation?.label ? `${deliveryLocation.label}: ` : ''}{deliveryLocation?.address?.split(',')[0] || 'Connaught Place'}
               </span>
-            </button>
-
-            <button
-              onClick={onOpenSellerPortal}
-              style={{
-                padding: '0.45rem 0.75rem',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--black)',
-                color: 'var(--yellow)',
-                border: 'var(--border-thick)',
-                boxShadow: '2px 2px 0px var(--red)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              👨‍🍳 SELLER
             </button>
 
             <button
@@ -167,32 +150,18 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLo
               onClick={onOpenCart}
               className="btn-editorial"
               style={{
-                padding: '0.6rem 1.4rem',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.6rem'
+                padding: '0.5rem 1.1rem',
+                fontSize: '0.85rem',
+                backgroundColor: 'var(--red)',
+                color: 'var(--white)',
+                boxShadow: '3px 3px 0px var(--black)',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer'
               }}
-              data-cursor="CART"
             >
-              <span>ORDER NOW</span>
-              <span
-                style={{
-                  backgroundColor: 'var(--black)',
-                  color: 'var(--cream)',
-                  borderRadius: '50%',
-                  width: '24px',
-                  height: '24px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.85rem',
-                  fontWeight: 900
-                }}
-              >
-                {cartCount}
-              </span>
+              🛍️ BAG ({cartCount || 0})
             </button>
+          </div>
 
             {/* Mobile Hamburger Button */}
             <button
@@ -210,7 +179,6 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLo
             >
               {mobileOpen ? 'CLOSE' : 'MENU'}
             </button>
-          </div>
         </div>
       </header>
 

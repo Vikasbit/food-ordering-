@@ -3,6 +3,7 @@ import { loadGoogleMapsScript } from '../services/googleMapsLoader';
 
 export default function GoogleMapsView({
   customerLocation,
+  kitchenLocation,
   driverLocation,
   showRoute = true,
   interactive = true,
@@ -26,8 +27,8 @@ export default function GoogleMapsView({
         if (!isMounted || !containerRef.current) return;
         setGoogleMapsReady(true);
 
-        const centerLat = customerLocation?.lat || 28.6315;
-        const centerLng = customerLocation?.lng || 77.2167;
+        const centerLat = customerLocation?.lat || kitchenLocation?.lat || 28.6315;
+        const centerLng = customerLocation?.lng || kitchenLocation?.lng || 77.2167;
 
         if (!mapRef.current) {
           const mapOptions = {
@@ -61,7 +62,7 @@ export default function GoogleMapsView({
     return () => {
       isMounted = false;
     };
-  }, [customerLocation?.lat, customerLocation?.lng, interactive, onMapClick]);
+  }, [customerLocation?.lat, customerLocation?.lng, kitchenLocation?.lat, kitchenLocation?.lng, interactive, onMapClick]);
 
   // Handle Markers & Routes when Google Maps is ready
   useEffect(() => {
@@ -85,6 +86,10 @@ export default function GoogleMapsView({
         bg = '#FFC400';
         icon = '🏠';
         border = '#111';
+      } else if (type === 'kitchen') {
+        bg = '#111111';
+        icon = '🍳';
+        border = '#F20D0D';
       } else if (type === 'driver') {
         bg = '#F20D0D';
         icon = '🛵';
@@ -152,7 +157,44 @@ export default function GoogleMapsView({
       }
     }
 
-    // 2. Driver Marker (Real-time animated)
+    // 2. Kitchen / Restaurant Origin Marker
+    if (kitchenLocation?.lat && kitchenLocation?.lng) {
+      const pos = { lat: kitchenLocation.lat, lng: kitchenLocation.lng };
+      bounds.extend(pos);
+      hasPoint = true;
+
+      if (!markersRef.current.kitchen) {
+        if (maps.marker?.AdvancedMarkerElement) {
+          markersRef.current.kitchen = new maps.marker.AdvancedMarkerElement({
+            map,
+            position: pos,
+            content: createHtmlMarkerElement('kitchen', kitchenLocation.name || 'Food Origin Kitchen')
+          });
+        } else {
+          markersRef.current.kitchen = new maps.Marker({
+            map,
+            position: pos,
+            title: kitchenLocation.name || 'Origin Kitchen',
+            icon: {
+              path: maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#111111',
+              fillOpacity: 1,
+              strokeWeight: 2,
+              strokeColor: '#F20D0D'
+            }
+          });
+        }
+      } else {
+        if (markersRef.current.kitchen.setPosition) {
+          markersRef.current.kitchen.setPosition(pos);
+        } else {
+          markersRef.current.kitchen.position = pos;
+        }
+      }
+    }
+
+    // 3. Driver Marker (Real-time animated)
     if (driverLocation?.latitude && driverLocation?.longitude) {
       const pos = { lat: driverLocation.latitude, lng: driverLocation.longitude };
       bounds.extend(pos);
@@ -196,12 +238,12 @@ export default function GoogleMapsView({
       }
     }
 
-    // 3. Draw Route Polyline (Rider to Customer)
-    if (showRoute && driverLocation && customerLocation) {
-      const routePoints = [
-        { lat: driverLocation.latitude, lng: driverLocation.longitude },
-        { lat: customerLocation.lat, lng: customerLocation.lng }
-      ];
+    // 4. Draw Route Polyline (Kitchen -> Rider -> Customer)
+    if (showRoute && (kitchenLocation || driverLocation) && customerLocation) {
+      const routePoints = [];
+      if (kitchenLocation) routePoints.push({ lat: kitchenLocation.lat, lng: kitchenLocation.lng });
+      if (driverLocation) routePoints.push({ lat: driverLocation.latitude, lng: driverLocation.longitude });
+      if (customerLocation) routePoints.push({ lat: customerLocation.lat, lng: customerLocation.lng });
 
       if (polylineRef.current) {
         polylineRef.current.setPath(routePoints);
@@ -220,15 +262,15 @@ export default function GoogleMapsView({
     if (hasPoint && interactive) {
       map.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
     }
-  }, [googleMapsReady, customerLocation, driverLocation, showRoute, interactive]);
+  }, [googleMapsReady, customerLocation, kitchenLocation, driverLocation, showRoute, interactive]);
 
   // Leaflet Fallback implementation when Google Maps API key is not active
   useEffect(() => {
     if (mapError !== 'LEAFLET_FALLBACK' || !containerRef.current) return;
 
     if (window.L) {
-      const centerLat = customerLocation?.lat || 28.6315;
-      const centerLng = customerLocation?.lng || 77.2167;
+      const centerLat = customerLocation?.lat || kitchenLocation?.lat || 28.6315;
+      const centerLng = customerLocation?.lng || kitchenLocation?.lng || 77.2167;
 
       if (!mapRef.current) {
         const leafletMap = window.L.map(containerRef.current, {
@@ -257,6 +299,17 @@ export default function GoogleMapsView({
         window.L.marker([customerLocation.lat, customerLocation.lng], { icon: custIcon }).addTo(map);
       }
 
+      // Add kitchen pin
+      if (kitchenLocation?.lat && kitchenLocation?.lng) {
+        const kitchIcon = window.L.divIcon({
+          className: 'custom-leaflet-pin',
+          html: `<div style="background:#111; color:#FFF; font-weight:900; padding:5px 10px; border:2px solid #F20D0D; border-radius:15px; font-size:11px; box-shadow:2px 2px 0px #111;">🍳 ${kitchenLocation.name || 'Food Origin Kitchen'}</div>`,
+          iconSize: [140, 30],
+          iconAnchor: [70, 30]
+        });
+        window.L.marker([kitchenLocation.lat, kitchenLocation.lng], { icon: kitchIcon }).addTo(map);
+      }
+
       // Add driver pin
       if (driverLocation?.latitude && driverLocation?.longitude) {
         const drvIcon = window.L.divIcon({
@@ -269,15 +322,16 @@ export default function GoogleMapsView({
       }
 
       // Draw polyline
-      if (showRoute && driverLocation && customerLocation) {
+      if (showRoute && (kitchenLocation || driverLocation) && customerLocation) {
         const latlngs = [
-          [driverLocation.latitude, driverLocation.longitude],
+          ...(kitchenLocation ? [[kitchenLocation.lat, kitchenLocation.lng]] : []),
+          ...(driverLocation ? [[driverLocation.latitude, driverLocation.longitude]] : []),
           [customerLocation.lat, customerLocation.lng]
         ];
         window.L.polyline(latlngs, { color: '#F20D0D', weight: 4, opacity: 0.8 }).addTo(map);
       }
     }
-  }, [mapError, customerLocation, driverLocation, showRoute]);
+  }, [mapError, customerLocation, kitchenLocation, driverLocation, showRoute]);
 
   return (
     <div

@@ -139,68 +139,39 @@ export const authService = {
         await supabase.from('restaurants').insert([newRest]);
       }
       return data;
+  async signUpSeller({ fullName, email, phone, password }) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName, phone, role: 'seller' } }
+      });
+      if (error) throw error;
+      if (data.user) {
+        await supabase.from('profiles').insert([
+          { id: data.user.id, email, full_name: fullName, phone, role: 'seller' }
+        ]);
+      }
+      return { user: data.user };
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      throw new Error('A seller account with this email already exists.');
+      throw new Error('An account with this email already exists.');
     }
-
     const newSeller = {
       id: `seller-${Date.now()}`,
       email,
       password,
-      full_name: ownerName,
+      full_name: fullName,
       phone,
       role: 'seller'
     };
     users.push(newSeller);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-
-    // Create Restaurant Record
-    const restaurants = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
-    const newRestaurant = {
-      id: `rest-${Date.now()}`,
-      seller_id: newSeller.id,
-      name: restaurantName,
-      slug: restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      address,
-      city: city || 'DELHI',
-      lat: 28.6315,
-      lng: 77.2167,
-      cuisine,
-      phone,
-      opening_hours: openingHours || '10:00 AM - 11:00 PM',
-      delivery_radius_km: 12,
-      status: 'active',
-      logo_url: '/assets/indian-chef-kitchen.png',
-      cover_url: '/assets/butter-chicken-real.png',
-      rating: 4.9,
-      reviews_count: 1,
-      categories: [
-        {
-          id: `cat-main-${Date.now()}`,
-          name: 'MAIN DISHES',
-          items: [
-            {
-              id: `item-signature-${Date.now()}`,
-              name: `${restaurantName} Special Curry`,
-              description: 'Freshly prepared signature dish with secret house spices.',
-              price: 280,
-              image_url: '/assets/butter-chicken-real.png',
-              is_veg: true,
-              is_bestseller: true,
-              is_available: true,
-              prep_time_min: 15
-            }
-          ]
-        }
-      ]
-    };
-    restaurants.push(newRestaurant);
-    localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(restaurants));
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newSeller));
-    return { user: newSeller, restaurant: newRestaurant };
+    
+    return { user: newSeller };
   },
 
   async login({ email, password }) {
@@ -233,6 +204,34 @@ export const authService = {
 // ========================================================
 
 export const marketplaceService = {
+  async createSellerRestaurant(restData) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.from('restaurants').insert([restData]).select().single();
+      if (error) throw error;
+      return data;
+    }
+
+    const restaurants = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
+    
+    // Check if seller already has one
+    if (restaurants.find(r => r.seller_id === restData.seller_id)) {
+      throw new Error('You already have a restaurant set up.');
+    }
+
+    const newRestaurant = {
+      id: `rest-${Date.now()}`,
+      ...restData,
+      rating: 0,
+      reviews_count: 0,
+      categories: [],
+      logo_url: null,
+      cover_url: null
+    };
+    restaurants.push(newRestaurant);
+    localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(restaurants));
+    return newRestaurant;
+  },
+
   async getAllRestaurants() {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('restaurants').select('*, menu_categories(*, menu_items(*))').eq('status', 'active');
@@ -248,7 +247,7 @@ export const marketplaceService = {
 
   async getSellerRestaurant(sellerId) {
     const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
-    return all.find((r) => r.seller_id === sellerId) || all[0];
+    return all.find((r) => r.seller_id === sellerId) || null;
   },
 
   async updateSellerRestaurant(restaurantId, updatedFields) {
@@ -329,57 +328,149 @@ export const marketplaceService = {
 // ========================================================
 
 export const orderService = {
-  async createOrder(orderPayload) {
+  // Phase 4 Checkout Service handles order creation.
+  
+  async getCustomerOrders(customerId) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.from('orders').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
     const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
-    const newOrder = {
-      id: `ord-${Date.now()}`,
-      order_number: `EAT-${Math.floor(100000 + Math.random() * 900000)}`,
-      customer_id: orderPayload.customer_id || 'cust-anon',
-      restaurant_id: orderPayload.restaurant_id,
-      restaurant_name: orderPayload.restaurant_name,
-      delivery_address: orderPayload.delivery_address,
-      delivery_lat: orderPayload.delivery_lat,
-      delivery_lng: orderPayload.delivery_lng,
-      items: orderPayload.items,
-      subtotal: orderPayload.subtotal,
-      gst_tax: orderPayload.gst_tax,
-      delivery_fee: orderPayload.delivery_fee,
-      discount_amount: orderPayload.discount_amount || 0,
-      grand_total: orderPayload.grand_total,
-      coupon_code: orderPayload.coupon_code || null,
-      status: 'PENDING',
-      payment_method: orderPayload.payment_method || 'UPI_QR',
-      payment_status: 'PAID',
-      driver_name: 'Rahul Sharma (4.9 ★)',
-      driver_phone: '+91 98765 12345',
-      estimated_delivery_min: 24,
-      created_at: new Date().toISOString()
-    };
-
-    orders.unshift(newOrder);
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    return newOrder;
+    return orders.filter(o => o.customer_id === customerId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   },
 
-  async getCustomerOrders(customerId) {
+  async getOrderById(orderId) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
+      if (error) throw error;
+      return data;
+    }
     const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
-    return orders;
+    return orders.find(o => o.id === orderId) || null;
   },
 
   async getSellerOrders(sellerRestaurantId) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.from('orders').select('*').eq('restaurant_id', sellerRestaurantId).order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+    
+    // Strict RLS equivalent for mock: only return orders matching the restaurant ID
     const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
-    return orders;
+    return orders
+      .filter((o) => o.restaurant_id === sellerRestaurantId && o.payment_status === 'CAPTURED')
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   },
 
-  async updateOrderStatus(orderId, newStatus) {
+  async updateOrderStatus(orderId, newStatus, reason = null) {
+    if (isSupabaseConfigured) {
+      const payload = { status: newStatus };
+      if (newStatus === 'ACCEPTED') payload.accepted_at = new Date().toISOString();
+      if (newStatus === 'PREPARING') payload.preparing_at = new Date().toISOString();
+      if (newStatus === 'READY_FOR_PICKUP') payload.ready_at = new Date().toISOString();
+      if (newStatus === 'CANCELLED') {
+        payload.rejected_at = new Date().toISOString();
+        payload.rejection_reason = reason;
+      }
+      
+      const { data, error } = await supabase.from('orders').update(payload).eq('id', orderId).select().single();
+      if (error) throw error;
+      return data;
+    }
+
     const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
     const index = orders.findIndex((o) => o.id === orderId);
     if (index !== -1) {
-      orders[index].status = newStatus;
-      orders[index].updated_at = new Date().toISOString();
+      const order = orders[index];
+      
+      // Strict state machine validation
+      const validTransitions = {
+        'PENDING': ['ACCEPTED', 'CANCELLED'],
+        'ACCEPTED': ['PREPARING', 'CANCELLED'],
+        'PREPARING': ['READY_FOR_PICKUP', 'CANCELLED'],
+        'READY_FOR_PICKUP': ['DRIVER_ASSIGNED'] // Handled in phase 6
+      };
+      
+      if (!validTransitions[order.status]?.includes(newStatus)) {
+        throw new Error(`Invalid status transition from ${order.status} to ${newStatus}`);
+      }
+
+      order.status = newStatus;
+      order.updated_at = new Date().toISOString();
+      
+      // Store timestamps
+      if (newStatus === 'ACCEPTED') order.accepted_at = new Date().toISOString();
+      if (newStatus === 'PREPARING') order.preparing_at = new Date().toISOString();
+      if (newStatus === 'READY_FOR_PICKUP') order.ready_at = new Date().toISOString();
+      if (newStatus === 'CANCELLED') {
+        order.rejected_at = new Date().toISOString();
+        order.rejection_reason = reason;
+      }
+
+      orders[index] = order;
       localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-      return orders[index];
+      
+      // Fire a custom local event to simulate realtime in the same window (edge case)
+      window.dispatchEvent(new Event('mock_realtime_order_update'));
+      
+      return order;
     }
-    return null;
+    throw new Error('Order not found');
+  },
+
+  // REALTIME SUBSCRIPTIONS (Cross-tab support via Storage Events)
+  subscribeToOrder(orderId, callback) {
+    if (isSupabaseConfigured) {
+      const channel = supabase.channel(`public:orders:id=eq.${orderId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, (payload) => {
+          callback(payload.new);
+        }).subscribe();
+      return () => supabase.removeChannel(channel);
+    }
+    
+    // Mock Realtime
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEYS.ORDERS || e.type === 'mock_realtime_order_update') {
+        const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+        const updatedOrder = orders.find(o => o.id === orderId);
+        if (updatedOrder) callback(updatedOrder);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('mock_realtime_order_update', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('mock_realtime_order_update', handleStorageChange);
+    };
+  },
+
+  subscribeToRestaurantOrders(restaurantId, callback) {
+    if (isSupabaseConfigured) {
+      const channel = supabase.channel(`public:orders:restaurant_id=eq.${restaurantId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${restaurantId}` }, (payload) => {
+          callback(payload.new);
+        }).subscribe();
+      return () => supabase.removeChannel(channel);
+    }
+    
+    // Mock Realtime
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEYS.ORDERS || e.type === 'mock_realtime_order_update') {
+        // Just trigger callback to refresh the list
+        callback();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('mock_realtime_order_update', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('mock_realtime_order_update', handleStorageChange);
+    };
   }
 };
