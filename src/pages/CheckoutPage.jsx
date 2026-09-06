@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { checkoutService } from '../services/checkoutService';
 import LocationPickerModal from '../components/LocationPickerModal';
+import PaymentMethodSelector from '../components/PaymentMethodSelector';
 import GoogleMapsView from '../components/GoogleMapsView';
 import RazorpayButton from '../components/RazorpayButton';
 
@@ -26,6 +27,7 @@ export default function CheckoutPage() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [razorpayOrder, setRazorpayOrder] = useState(null); // holds order data from backend
   const [billPreview, setBillPreview] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('UPI'); // UPI or COD
 
 
   useEffect(() => {
@@ -94,8 +96,16 @@ export default function CheckoutPage() {
         cartItems: cartItems.map(i => ({ id: i.id, quantity: i.quantity, price: i.price, rawPrice: i.rawPrice })),
         restaurantId: rest.id,
         couponCode: appliedCoupon?.code || null,
-        userId: user?.id || 'guest-user'
+        userId: user?.id || 'guest-user',
+        paymentMethod // include selected payment method
       });
+      if (orderResponse.paymentMethod === 'COD') {
+        // COD flow - directly consider order placed
+        clearCart();
+        navigate(`/orders/${orderResponse.orderId}/track`, { replace: true });
+        setLoading(false);
+        return;
+      }
       setRazorpayOrder(orderResponse);
       setLoadingMessage('Ready for payment');
     } catch (err) {
@@ -319,6 +329,9 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Payment Method Selector */}
+            <PaymentMethodSelector selectedMethod={paymentMethod} onChange={setPaymentMethod} />
+            
             {/* Place Order CTA */}
             {razorpayOrder ? (
               <RazorpayButton
@@ -363,7 +376,7 @@ export default function CheckoutPage() {
                 className="btn-primary"
                 style={{ width: '100%', padding: '1.1rem', fontSize: '1.1rem', marginTop: '0.5rem' }}
               >
-                Place Order &amp; Pay via Razorpay (${billPreview?.total.toFixed(2)})
+                {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : `Place Order & Pay via Razorpay (${billPreview?.total.toFixed(2)})`}
               </button>
             )}
 

@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { cartItems, restaurantId, couponCode, userId } = await req.json()
+    const { cartItems, restaurantId, couponCode, userId, paymentMethod } = await req.json()
 
     // 1. Authenticate user
     const supabaseClient = createClient(
@@ -69,14 +69,52 @@ serve(async (req) => {
     const finalAmount = (subtotal - discount) + deliveryFee + tax
 
     // 6. Generate Razorpay Order
+    // Validate paymentMethod
+    const pm = (paymentMethod || 'UPI').toUpperCase()
+    if (!['UPI', 'COD'].includes(pm)) {
+      throw new Error('Invalid payment method')
+    }
+
+    // Generate BIGBITES order ID
+    const bigbitesOrderId = `EAT${Date.now()}`
+
+    // Insert order with pending status into Supabase
+    const { error: insertError } = await supabaseClient.from('orders').insert({
+      id: bigbitesOrderId,
+      user_id: user.id,
+      restaurant_id: restaurant.id,
+      status: 'PENDING',
+      payment_method: pm,
+      payment_status: pm === 'COD' ? 'PENDING' : 'PENDING',
+      amount: finalAmount,
+      subtotal: subtotal,
+      discount: discount,
+      delivery_fee: deliveryFee,
+      tax: tax,
+    })
+    if (insertError) {
+      throw new Error('Failed to create order')
+    }
+
+    if (pm === 'COD') {
+      // COD flow – no Razorpay order
+      return new Response(
+        JSON.stringify({
+          orderId: bigbitesOrderId,
+          paymentMethod: 'COD',
+          paymentStatus: 'PENDING'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // UPI flow – create Razorpay order
     const razorpayKeyId = Deno.env.get('RAZORPAY_KEY_ID')
     const razorpaySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
-
     if (!razorpayKeyId || !razorpaySecret) {
       throw new Error('Razorpay configuration missing')
     }
 
-    // Using fetch to call Razorpay API directly
     const rzpResponse = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: {
@@ -89,17 +127,16 @@ serve(async (req) => {
         receipt: `receipt_${Date.now()}`
       })
     })
-
     const rzpOrder = await rzpResponse.json()
     if (!rzpOrder.id) {
       throw new Error('Failed to create Razorpay Order')
     }
 
-    // 7. Create Pending Order in Supabase
-    const bigbitesOrderId = `EAT${Date.now()}`
-    
-    // We would insert into 'orders' here with status 'PAYMENT_PENDING'
-    // For MVP phase 4, returning the ID to frontend is sufficient until webhook/verification
+    // Update order with Razorpay reference
+    const { error: updateError } = await supabaseClient.from('orders').update({ razorpay_order_id: rzpOrder.id }).eq('id', bigbitesOrderId)
+    if (updateError) {
+      throw new Error('Failed to link Razorpay order')
+    }
 
     return new Response(
       JSON.stringify({
@@ -107,7 +144,8 @@ serve(async (req) => {
         amount: finalAmount * 100,
         currency: 'INR',
         razorpayOrderId: rzpOrder.id,
-        bigbitesOrderId
+        bigbitesOrderId,
+        paymentMethod: 'UPI'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

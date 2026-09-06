@@ -9,7 +9,7 @@ export const checkoutService = {
    * 3. Calculates (Food Subtotal - Coupon) + Delivery + Tax.
    * 4. Returns checkout response with order IDs.
    */
-  async createRazorpayOrder({ cartItems, restaurantId, couponCode, userId }) {
+  async createRazorpayOrder({ cartItems, restaurantId, couponCode, userId, paymentMethod = 'UPI' }) {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { cartItems, restaurantId, couponCode, userId }
@@ -74,6 +74,14 @@ export const checkoutService = {
 
     await new Promise(r => setTimeout(r, 400));
 
+    if (paymentMethod.toUpperCase() === 'COD') {
+      // COD flow – no Razorpay order needed
+      return {
+        orderId: mockOrderId,
+        paymentMethod: 'COD',
+        paymentStatus: 'PENDING'
+      };
+    }
     return {
       razorpayKeyId: 'rzp_test_mockkey123',
       amount: Math.round(finalAmount * 100),
