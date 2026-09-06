@@ -1,5 +1,5 @@
 -- ========================================================
--- EATnaked Two-Sided Food Delivery Marketplace Supabase Schema
+-- BigBites Two-Sided Food Delivery Marketplace Supabase Schema
 -- ========================================================
 
 -- Enable UUID Extension

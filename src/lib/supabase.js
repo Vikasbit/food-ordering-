@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { SEED_RESTAURANTS } from '../data/seedData';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock-eatnaked.supabase.co';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock-bigbites.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-anon-key';
 
 export const isSupabaseConfigured = Boolean(
@@ -17,22 +17,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // LocalStorage Persistence Keys for Offline / Mock Engine
 const STORAGE_KEYS = {
-  USERS: 'eatnaked_db_users',
-  CURRENT_USER: 'eatnaked_auth_user',
-  RESTAURANTS: 'eatnaked_db_restaurants',
-  ORDERS: 'eatnaked_db_orders'
+  USERS: 'bigbites_db_users',
+  CURRENT_USER: 'bigbites_auth_user',
+  RESTAURANTS: 'bigbites_db_restaurants',
+  ORDERS: 'bigbites_db_orders',
+  DRIVERS: 'bigbites_db_drivers',
+  DRIVER_LOCATIONS: 'bigbites_db_driver_locations',
+  ADDRESSES: 'bigbites_db_addresses'
 };
 
 // Initialize Mock Store if empty
 function initializeMockStore() {
-  if (!localStorage.getItem(STORAGE_KEYS.RESTAURANTS)) {
+  const existingRests = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
+  const hasAllRests = existingRests.length >= SEED_RESTAURANTS.length &&
+    existingRests.some(r => r.city === 'VADODARA') &&
+    existingRests.some(r => r.id === 'rest-vadodara-alkapuri');
+  if (!existingRests || !hasAllRests) {
     localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(SEED_RESTAURANTS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     const demoUsers = [
       {
         id: 'user-cust-1',
-        email: 'customer@eatnaked.com',
+        email: 'customer@bigbites.com',
         password: 'password123',
         full_name: 'Rahul Sharma',
         phone: '+91 98765 43210',
@@ -40,7 +47,7 @@ function initializeMockStore() {
       },
       {
         id: 'seller-delhi-1',
-        email: 'seller@eatnaked.com',
+        email: 'seller@bigbites.com',
         password: 'password123',
         full_name: 'Vikram Singh (Owner)',
         phone: '+91 99887 76655',
@@ -51,6 +58,23 @@ function initializeMockStore() {
   }
   if (!localStorage.getItem(STORAGE_KEYS.ORDERS)) {
     localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.DRIVERS)) {
+    const demoDrivers = [
+      {
+        id: 'driver-demo-1',
+        name: 'Demo Driver',
+        phone: '+91 98765 12345',
+        vehicle_type: 'Motorcycle',
+        vehicle_number: 'DL-01-AB-1234',
+        is_available: true,
+        is_active: true
+      }
+    ];
+    localStorage.setItem(STORAGE_KEYS.DRIVERS, JSON.stringify(demoDrivers));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.DRIVER_LOCATIONS)) {
+    localStorage.setItem(STORAGE_KEYS.DRIVER_LOCATIONS, JSON.stringify([]));
   }
 }
 
@@ -106,53 +130,42 @@ export const authService = {
     return { user: newUser };
   },
 
-  async signUpSeller({ ownerName, email, phone, password, restaurantName, address, city, cuisine, openingHours }) {
+  async signUpSeller({ fullName, ownerName, email, phone, password, restaurantName, address, city, cuisine, openingHours }) {
+    const finalName = fullName || ownerName || 'Seller';
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: ownerName, phone, role: 'seller' } }
+        options: { data: { full_name: finalName, phone, role: 'seller' } }
       });
       if (error) throw error;
 
       if (data.user) {
         await supabase.from('profiles').insert([
-          { id: data.user.id, email, full_name: ownerName, phone, role: 'seller' }
+          { id: data.user.id, email, full_name: finalName, phone, role: 'seller' }
         ]);
 
-        const newRest = {
-          seller_id: data.user.id,
-          name: restaurantName,
-          slug: restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          address,
-          city: city || 'DELHI',
-          lat: 28.6315,
-          lng: 77.2167,
-          cuisine,
-          phone,
-          opening_hours: openingHours || '10:00 AM - 11:00 PM',
-          delivery_radius_km: 12,
-          status: 'active',
-          rating: 4.8,
-          reviews_count: 1
-        };
-        await supabase.from('restaurants').insert([newRest]);
+        if (restaurantName) {
+          const newRest = {
+            seller_id: data.user.id,
+            name: restaurantName,
+            slug: restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            address: address || '',
+            city: city || 'DELHI',
+            lat: 28.6315,
+            lng: 77.2167,
+            cuisine: cuisine || 'Indian Street Food',
+            phone: phone || '',
+            opening_hours: openingHours || '10:00 AM - 11:00 PM',
+            delivery_radius_km: 12,
+            status: 'active',
+            rating: 4.8,
+            reviews_count: 1
+          };
+          await supabase.from('restaurants').insert([newRest]);
+        }
       }
       return data;
-  async signUpSeller({ fullName, email, phone, password }) {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName, phone, role: 'seller' } }
-      });
-      if (error) throw error;
-      if (data.user) {
-        await supabase.from('profiles').insert([
-          { id: data.user.id, email, full_name: fullName, phone, role: 'seller' }
-        ]);
-      }
-      return { user: data.user };
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
@@ -163,7 +176,7 @@ export const authService = {
       id: `seller-${Date.now()}`,
       email,
       password,
-      full_name: fullName,
+      full_name: finalName,
       phone,
       role: 'seller'
     };
@@ -390,7 +403,11 @@ export const orderService = {
         'PENDING': ['ACCEPTED', 'CANCELLED'],
         'ACCEPTED': ['PREPARING', 'CANCELLED'],
         'PREPARING': ['READY_FOR_PICKUP', 'CANCELLED'],
-        'READY_FOR_PICKUP': ['DRIVER_ASSIGNED'] // Handled in phase 6
+        'READY_FOR_PICKUP': ['DRIVER_ASSIGNED', 'CANCELLED'],
+        'DRIVER_ASSIGNED': ['PICKED_UP', 'CANCELLED'],
+        'PICKED_UP': ['OUT_FOR_DELIVERY', 'CANCELLED'],
+        'OUT_FOR_DELIVERY': ['DELIVERED', 'CANCELLED'],
+        'DELIVERED': []
       };
       
       if (!validTransitions[order.status]?.includes(newStatus)) {
@@ -404,6 +421,10 @@ export const orderService = {
       if (newStatus === 'ACCEPTED') order.accepted_at = new Date().toISOString();
       if (newStatus === 'PREPARING') order.preparing_at = new Date().toISOString();
       if (newStatus === 'READY_FOR_PICKUP') order.ready_at = new Date().toISOString();
+      if (newStatus === 'DRIVER_ASSIGNED') order.assigned_at = new Date().toISOString();
+      if (newStatus === 'PICKED_UP') order.picked_up_at = new Date().toISOString();
+      if (newStatus === 'OUT_FOR_DELIVERY') order.out_for_delivery_at = new Date().toISOString();
+      if (newStatus === 'DELIVERED') order.delivered_at = new Date().toISOString();
       if (newStatus === 'CANCELLED') {
         order.rejected_at = new Date().toISOString();
         order.rejection_reason = reason;
@@ -418,6 +439,48 @@ export const orderService = {
       return order;
     }
     throw new Error('Order not found');
+  },
+
+  async assignDriver(orderId, driverId) {
+    if (isSupabaseConfigured) {
+       // ... handle real supabase assignment
+       return;
+    }
+    
+    const orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS) || '[]');
+    const drivers = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRIVERS) || '[]');
+    const orderIndex = orders.findIndex(o => o.id === orderId);
+    const driverIndex = drivers.findIndex(d => d.id === driverId);
+    
+    if (orderIndex === -1) throw new Error('Order not found');
+    if (driverIndex === -1) throw new Error('Driver not found');
+    if (!drivers[driverIndex].is_available) throw new Error('Driver is not available');
+    if (orders[orderIndex].status !== 'READY_FOR_PICKUP') throw new Error('Order is not ready for pickup');
+    
+    // Assign
+    orders[orderIndex].driver_id = driverId;
+    orders[orderIndex].driver_name = drivers[driverIndex].name;
+    orders[orderIndex].driver_phone = drivers[driverIndex].phone;
+    drivers[driverIndex].is_available = false;
+    
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    localStorage.setItem(STORAGE_KEYS.DRIVERS, JSON.stringify(drivers));
+    
+    await this.updateOrderStatus(orderId, 'DRIVER_ASSIGNED');
+    return orders[orderIndex];
+  },
+  
+  async completeDelivery(orderId) {
+     const order = await this.updateOrderStatus(orderId, 'DELIVERED');
+     if (order && order.driver_id) {
+       const drivers = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRIVERS) || '[]');
+       const driverIndex = drivers.findIndex(d => d.id === order.driver_id);
+       if (driverIndex !== -1) {
+         drivers[driverIndex].is_available = true;
+         localStorage.setItem(STORAGE_KEYS.DRIVERS, JSON.stringify(drivers));
+       }
+     }
+     return order;
   },
 
   // REALTIME SUBSCRIPTIONS (Cross-tab support via Storage Events)
@@ -474,3 +537,152 @@ export const orderService = {
     };
   }
 };
+
+// ========================================================
+// DRIVER & LOCATION SERVICE (PHASE 6)
+// ========================================================
+
+export const driverService = {
+  async getAvailableDrivers() {
+    if (isSupabaseConfigured) {
+      // return supabase logic
+      return [];
+    }
+    const drivers = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRIVERS) || '[]');
+    return drivers.filter(d => d.is_active && d.is_available);
+  },
+
+  async updateDriverLocation(orderId, driverId, lat, lng, heading = 0) {
+    if (isSupabaseConfigured) {
+       // Real supabase
+       return;
+    }
+    
+    const locations = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRIVER_LOCATIONS) || '[]');
+    const newLocation = {
+      order_id: orderId,
+      driver_id: driverId,
+      latitude: lat,
+      longitude: lng,
+      heading,
+      recorded_at: new Date().toISOString()
+    };
+    
+    // For MVP, just keep the latest location per order to save space
+    const filtered = locations.filter(l => l.order_id !== orderId);
+    filtered.push(newLocation);
+    
+    localStorage.setItem(STORAGE_KEYS.DRIVER_LOCATIONS, JSON.stringify(filtered));
+    
+    // Dispatch event for realtime cross-tab simulation
+    const event = new CustomEvent('mock_realtime_location_update', { detail: newLocation });
+    window.dispatchEvent(event);
+    
+    return newLocation;
+  },
+
+  subscribeToDriverLocation(orderId, callback) {
+    if (isSupabaseConfigured) {
+      // Supabase realtime location tracking
+      return () => {};
+    }
+    
+    // Mock Realtime
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEYS.DRIVER_LOCATIONS) {
+        const locations = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRIVER_LOCATIONS) || '[]');
+        const loc = locations.find(l => l.order_id === orderId);
+        if (loc) callback(loc);
+      }
+    };
+    
+    const handleLocalEvent = (e) => {
+      if (e.detail && e.detail.order_id === orderId) {
+        callback(e.detail);
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('mock_realtime_location_update', handleLocalEvent);
+    
+    // Initial fetch
+    const locations = JSON.parse(localStorage.getItem(STORAGE_KEYS.DRIVER_LOCATIONS) || '[]');
+    const loc = locations.find(l => l.order_id === orderId);
+    if (loc) callback(loc);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('mock_realtime_location_update', handleLocalEvent);
+    };
+  }
+};
+
+// ========================================================
+// SAVED ADDRESSES SERVICE (GOOGLE MAPS ADDRESS BOOK)
+// ========================================================
+
+export const addressService = {
+  async getAddresses(userId) {
+    if (!userId) return [];
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (!error && data) return data;
+    }
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADDRESSES) || '[]');
+    return all.filter((a) => a.user_id === userId);
+  },
+
+  async saveAddress(userId, addressData) {
+    if (!userId || !addressData) return null;
+    const newAddress = {
+      id: addressData.id || `addr-${Date.now()}`,
+      user_id: userId,
+      label: addressData.label || 'Home',
+      full_address: addressData.full_address || addressData.address || '',
+      latitude: addressData.latitude ?? addressData.lat,
+      longitude: addressData.longitude ?? addressData.lng,
+      google_place_id: addressData.google_place_id || addressData.place_id || null,
+      city: addressData.city || '',
+      state: addressData.state || '',
+      postal_code: addressData.postal_code || '',
+      created_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.from('addresses').upsert([newAddress]).select().single();
+      if (!error && data) return data;
+    }
+
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADDRESSES) || '[]');
+    // Avoid duplicate address for same user within 20 meters
+    const existingIndex = all.findIndex(
+      (a) =>
+        a.user_id === userId &&
+        (a.id === newAddress.id ||
+          (Math.abs(a.latitude - newAddress.latitude) < 0.0002 && Math.abs(a.longitude - newAddress.longitude) < 0.0002))
+    );
+
+    if (existingIndex > -1) {
+      all[existingIndex] = { ...all[existingIndex], ...newAddress };
+    } else {
+      all.push(newAddress);
+    }
+
+    localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(all));
+    return newAddress;
+  },
+
+  async deleteAddress(id) {
+    if (isSupabaseConfigured) {
+      await supabase.from('addresses').delete().eq('id', id);
+    }
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADDRESSES) || '[]');
+    const filtered = all.filter((a) => a.id !== id);
+    localStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(filtered));
+  }
+};
+

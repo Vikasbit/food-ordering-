@@ -10,6 +10,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
+import RestaurantPage from './pages/RestaurantPage';
 
 // Seller Pages
 import SellerLoginPage from './pages/seller/SellerLoginPage';
@@ -21,6 +22,7 @@ import SellerMenuPage from './pages/seller/SellerMenuPage';
 import SellerOrdersPage from './pages/seller/SellerOrdersPage';
 import RestaurantPreviewPage from './pages/seller/RestaurantPreviewPage';
 import SellerSettingsPage from './pages/seller/SellerSettingsPage';
+import DriverSimulatorPage from './pages/dev/DriverSimulatorPage';
 
 import './styles/globals.css';
 import './styles/animations.css';
@@ -37,6 +39,10 @@ export default function App() {
               <Route path="cart" element={<CartPage />} />
               <Route path="checkout" element={<CheckoutPage />} />
               <Route path="order/:id" element={<OrderConfirmationPage />} />
+              <Route path="orders/:orderId/track" element={<OrderConfirmationPage />} />
+              <Route path="restaurant/:id" element={<RestaurantPage />} />
+              <Route path="/dev/driver" element={<DriverSimulatorPage />} />
+              <Route path="/driver" element={<DriverSimulatorPage />} />
               <Route path="orders" element={<OrdersPage />} />
             </Route>
 

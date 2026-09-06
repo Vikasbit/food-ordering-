@@ -84,7 +84,7 @@ export default function SellerOrdersPage() {
   if (loading) return <div style={{ padding: '2rem' }}>Loading Orders...</div>;
 
   // Filter logic
-  const TABS = ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'];
+  const TABS = ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'DELIVERY', 'COMPLETED', 'CANCELLED'];
   
   const getTabOrders = (tab) => {
     switch (tab) {
@@ -92,6 +92,7 @@ export default function SellerOrdersPage() {
       case 'ACCEPTED': return orders.filter(o => o.status === 'ACCEPTED');
       case 'PREPARING': return orders.filter(o => o.status === 'PREPARING');
       case 'READY': return orders.filter(o => o.status === 'READY_FOR_PICKUP');
+      case 'DELIVERY': return orders.filter(o => ['DRIVER_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(o.status));
       case 'COMPLETED': return orders.filter(o => o.status === 'DELIVERED');
       case 'CANCELLED': return orders.filter(o => o.status === 'CANCELLED');
       default: return [];
@@ -224,6 +225,19 @@ export default function SellerOrdersPage() {
                   {order.status === 'READY_FOR_PICKUP' && (
                     <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#e8f5e9', border: '1px solid var(--green)', fontWeight: 'bold', color: 'var(--green)' }}>
                       WAITING FOR DRIVER
+                    </div>
+                  )}
+
+                  {['DRIVER_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(order.status) && (
+                    <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#e3f2fd', border: '1px solid var(--blue)', fontWeight: 'bold', color: 'var(--blue)' }}>
+                      <div>{order.status.replace(/_/g, ' ')}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.5rem' }}>{order.driver_name}</div>
+                    </div>
+                  )}
+
+                  {order.status === 'DELIVERED' && (
+                    <div style={{ textAlign: 'center', padding: '1rem', backgroundColor: '#f5f5f5', border: '1px solid #ccc', fontWeight: 'bold', color: '#333' }}>
+                      DELIVERED
                     </div>
                   )}
 

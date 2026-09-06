@@ -106,7 +106,7 @@ export default function SellerAuthModal({ isOpen, onClose, onOpenDashboard }) {
                 {isRegisterMode ? 'BECOME A RESTAURANT PARTNER' : 'RESTAURANT PARTNER LOGIN'}
               </h3>
               <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--cream)', opacity: 0.8 }}>
-                EATnaked Merchant Portal
+                BigBites Merchant Portal
               </p>
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function SellerAuthModal({ isOpen, onClose, onOpenDashboard }) {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seller@eatnaked.com"
+                    placeholder="seller@bigbites.com"
                     style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
                   />
                 </div>

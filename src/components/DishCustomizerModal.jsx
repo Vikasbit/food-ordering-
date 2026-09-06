@@ -3,41 +3,41 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, Flame, Check, Utensils, MessageSquare } from 'lucide-react';
 
 const SPICE_LEVELS = [
-  { id: 'mild', label: 'Mild 🌶️', desc: 'Gentle aromatic spices' },
+  { id: 'mild', label: 'Mild 🌶️', desc: 'Gentle aromatic herbs & spices' },
   { id: 'medium', label: 'Medium 🌶️🌶️', desc: 'Authentic balanced heat' },
-  { id: 'fiery', label: 'Fiery Kashmiri 🌶️🌶️🌶️', desc: 'Bold, rich & spicy' }
+  { id: 'fiery', label: 'Extra Spicy 🌶️🌶️🌶️', desc: 'Bold, fiery house peppers' }
 ];
 
 const PORTIONS = [
-  { id: 'half', label: 'Half Portion', extra: -50, desc: 'Serves 1 person' },
-  { id: 'full', label: 'Full Portion', extra: 0, desc: 'Serves 1-2 persons' },
-  { id: 'family', label: 'Family Bucket', extra: 180, desc: 'Serves 3-4 persons' }
+  { id: 'regular', label: 'Regular Size', extra: 0, desc: 'Standard single portion' },
+  { id: 'double', label: 'Double Size / Upgraded', extra: 3.50, desc: 'Extra meat & double cheese' },
+  { id: 'combo', label: 'Make It A Combo (+ Fries & Drink)', extra: 4.99, desc: 'Includes drink & crisp fries' }
 ];
 
 const EXTRAS_OPTIONS = [
-  { id: 'paneer', label: 'Extra Paneer / Chicken Cubes', price: 60 },
-  { id: 'gravy', label: 'Extra Velvet Butter Gravy', price: 40 },
-  { id: 'naan', label: 'Fresh Tandoori Garlic Naan Pair', price: 80 },
-  { id: 'chutney', label: 'Mint & Tamarind Chutney Dip', price: 25 }
+  { id: 'cheese', label: 'Melted Cheddar Cheese Slice', price: 1.50 },
+  { id: 'bacon', label: 'Crispy Smoked Bacon Rashers', price: 2.25 },
+  { id: 'sauce', label: 'House Truffle Garlic Aioli Dip', price: 0.99 },
+  { id: 'jalapenos', label: 'Pickled Fire Jalapeños', price: 0.85 }
 ];
 
 export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart }) {
   const [spiceLevel, setSpiceLevel] = useState('medium');
-  const [portion, setPortion] = useState('full');
+  const [portion, setPortion] = useState('regular');
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [quantity, setQuantity] = useState(1);
 
   if (!isOpen || !dish) return null;
 
-  const basePriceNum = parseFloat(dish.price?.toString().replace(/[^0-9.]/g, '') || '290');
+  const basePriceNum = parseFloat(dish.price?.toString().replace(/[^0-9.]/g, '') || '8.99');
   const portionDiff = PORTIONS.find(p => p.id === portion)?.extra || 0;
   const extrasTotal = selectedExtras.reduce((acc, extraId) => {
     const item = EXTRAS_OPTIONS.find(e => e.id === extraId);
     return acc + (item ? item.price : 0);
   }, 0);
 
-  const unitPrice = Math.max(100, basePriceNum + portionDiff + extrasTotal);
+  const unitPrice = Math.max(1, basePriceNum + portionDiff + extrasTotal);
   const totalPrice = unitPrice * quantity;
 
   const toggleExtra = (extraId) => {
@@ -57,7 +57,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
       ...dish,
       id: `${dish.id || dish.name}-${spiceLevel}-${portion}-${selectedExtras.join('-')}`,
       name: `${dish.name} (${portionObj?.label})`,
-      price: `₹${totalPrice.toFixed(0)}`,
+      price: `$${unitPrice.toFixed(2)}`,
       customizations: {
         spice: spiceObj?.label,
         portion: portionObj?.label,
@@ -73,176 +73,340 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(28, 25, 23, 0.6)',
+          backdropFilter: 'blur(8px)',
+          padding: '1rem'
+        }}
+      >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-xl bg-[var(--cream)] border-4 border-black shadow-[10px_10px_0px_#111] overflow-hidden flex flex-col max-h-[90vh]"
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: '560px',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: '1px solid #ECE7DF',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '90vh'
+          }}
         >
           {/* Header */}
-          <div className="bg-[var(--yellow)] border-b-4 border-black p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_#111]">
-                ⚙️
-              </div>
-              <div>
-                <h2 className="font-extrabold text-xl tracking-tight text-black uppercase leading-none">
-                  CUSTOMIZE DISH
-                </h2>
-                <p className="text-xs font-bold text-gray-800 mt-0.5">TAILOR YOUR SPICES & ADD-ONS</p>
-              </div>
+          <div
+            style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #EFEAE2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#FAF5EE'
+            }}
+          >
+            <div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.35rem',
+                  fontWeight: 700,
+                  color: 'var(--brand-dark)',
+                  margin: 0
+                }}
+              >
+                Customize Your Dish
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: '#78716C', margin: '2px 0 0' }}>
+                Tailor spice levels, portion size & gourmet add-ons
+              </p>
             </div>
+
             <button
               onClick={onClose}
-              className="w-10 h-10 bg-white border-2 border-black font-extrabold text-lg shadow-[2px_2px_0px_#111] hover:bg-black hover:text-white transition-all flex items-center justify-center"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #ECE7DF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#78716C'
+              }}
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="p-4 space-y-4 overflow-y-auto flex-1">
+          <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* Dish Header Info */}
-            <div className="bg-white border-3 border-black p-3.5 shadow-[3px_3px_0px_#111] flex items-center gap-3">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                padding: '1rem',
+                borderRadius: '16px',
+                backgroundColor: '#FDFBF7',
+                border: '1px solid #EFEAE2'
+              }}
+            >
               <img
-                src={dish.image}
+                src={dish.image || dish.image_url}
                 alt={dish.name}
-                className="w-20 h-20 object-cover border-2 border-black shadow-[2px_2px_0px_#111]"
+                style={{
+                  width: '76px',
+                  height: '76px',
+                  borderRadius: '12px',
+                  objectFit: 'cover'
+                }}
               />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 border border-black rounded-full flex items-center justify-center ${dish.isVeg ? 'bg-green-600' : 'bg-red-600'}`}>
-                    <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                  </span>
-                  <h3 className="font-extrabold text-lg text-black leading-tight">{dish.name}</h3>
+              <div style={{ flex: 1 }}>
+                <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.2rem', color: 'var(--brand-dark)' }}>
+                  {dish.name}
+                </h4>
+                <p style={{ fontSize: '0.82rem', color: '#78716C', margin: 0, lineHeight: 1.4 }}>
+                  {dish.description || dish.desc}
+                </p>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--brand-primary)', marginTop: '0.35rem' }}>
+                  ${basePriceNum.toFixed(2)} Base Price
                 </div>
-                {dish.hindiName && (
-                  <span className="text-xs font-bold text-[var(--red)] block">{dish.hindiName}</span>
-                )}
-                <p className="text-xs text-gray-600 font-semibold line-clamp-1 mt-0.5">{dish.desc || dish.description}</p>
-                <div className="font-black text-sm text-[var(--red)] mt-1">₹{basePriceNum} BASE PRICE</div>
               </div>
             </div>
 
-            {/* Spice Level Section */}
+            {/* Spice Level */}
             <div>
-              <div className="text-xs font-black uppercase text-gray-800 mb-1.5 flex items-center gap-1">
-                <Flame className="w-4 h-4 text-[var(--red)]" /> SELECT SPICE LEVEL
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand-dark)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Flame className="w-4 h-4" style={{ color: 'var(--brand-primary)' }} />
+                <span>Spice Level</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem' }}>
                 {SPICE_LEVELS.map((s) => (
                   <button
                     key={s.id}
+                    type="button"
                     onClick={() => setSpiceLevel(s.id)}
-                    className={`p-2.5 border-2 border-black text-left shadow-[2px_2px_0px_#111] transition-all ${
-                      spiceLevel === s.id
-                        ? 'bg-[var(--red)] text-white'
-                        : 'bg-white text-black hover:bg-[var(--yellow)]'
-                    }`}
+                    style={{
+                      padding: '0.75rem 0.6rem',
+                      borderRadius: '12px',
+                      border: spiceLevel === s.id ? '2px solid var(--brand-primary)' : '1px solid #EFEAE2',
+                      backgroundColor: spiceLevel === s.id ? '#FFF7ED' : '#FFFFFF',
+                      textAlign: 'left',
+                      cursor: 'pointer'
+                    }}
                   >
-                    <div className="font-black text-xs">{s.label}</div>
-                    <div className={`text-[10px] font-bold ${spiceLevel === s.id ? 'text-gray-100' : 'text-gray-500'}`}>
-                      {s.desc}
-                    </div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-dark)' }}>{s.label}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#78716C', marginTop: '2px' }}>{s.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Portion Size Section */}
+            {/* Portion / Combo */}
             <div>
-              <div className="text-xs font-black uppercase text-gray-800 mb-1.5 flex items-center gap-1">
-                <Utensils className="w-4 h-4 text-black" /> PORTION SIZE
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand-dark)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Utensils className="w-4 h-4" />
+                <span>Portion & Combo</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {PORTIONS.map((p) => (
                   <button
                     key={p.id}
+                    type="button"
                     onClick={() => setPortion(p.id)}
-                    className={`p-2.5 border-2 border-black text-left shadow-[2px_2px_0px_#111] transition-all ${
-                      portion === p.id
-                        ? 'bg-[var(--yellow)] text-black font-extrabold'
-                        : 'bg-white text-black hover:bg-gray-100'
-                    }`}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: portion === p.id ? '2px solid var(--brand-primary)' : '1px solid #EFEAE2',
+                      backgroundColor: portion === p.id ? '#FFF7ED' : '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer'
+                    }}
                   >
-                    <div className="font-black text-xs uppercase">{p.label}</div>
-                    <div className="text-[10px] font-bold text-gray-600">{p.desc}</div>
-                    <div className="text-[10px] font-extrabold text-[var(--red)] mt-0.5">
-                      {p.extra === 0 ? 'SAME PRICE' : p.extra > 0 ? `+₹${p.extra}` : `-₹${Math.abs(p.extra)}`}
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand-dark)', textAlign: 'left' }}>{p.label}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#78716C' }}>{p.desc}</div>
                     </div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: p.extra > 0 ? 'var(--brand-primary)' : '#78716C' }}>
+                      {p.extra === 0 ? 'Standard' : `+$${p.extra.toFixed(2)}`}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Add-ons & Extras Checkboxes */}
+            {/* Add-ons Checkboxes */}
             <div>
-              <div className="text-xs font-black uppercase text-gray-800 mb-1.5 flex items-center gap-1">
-                <Plus className="w-4 h-4 text-[var(--green)]" /> ADD EXTRAS & BREADS
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand-dark)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Plus className="w-4 h-4" style={{ color: 'var(--brand-green)' }} />
+                <span>Gourmet Add-ons</span>
               </div>
-              <div className="space-y-1.5">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                 {EXTRAS_OPTIONS.map((extra) => {
                   const isChecked = selectedExtras.includes(extra.id);
                   return (
                     <button
                       key={extra.id}
+                      type="button"
                       onClick={() => toggleExtra(extra.id)}
-                      className={`w-full p-2.5 border-2 border-black flex items-center justify-between shadow-[2px_2px_0px_#111] transition-all text-xs font-extrabold ${
-                        isChecked ? 'bg-green-50 border-green-800' : 'bg-white hover:bg-gray-50'
-                      }`}
+                      style={{
+                        padding: '0.65rem 0.9rem',
+                        borderRadius: '12px',
+                        border: isChecked ? '1.5px solid var(--brand-green)' : '1px solid #EFEAE2',
+                        backgroundColor: isChecked ? '#F0FDF4' : '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer'
+                      }}
                     >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 border-2 border-black flex items-center justify-center ${isChecked ? 'bg-[var(--green)] text-white' : 'bg-white'}`}>
-                          {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <div
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            borderRadius: '4px',
+                            border: isChecked ? 'none' : '1.5px solid #D6D0C4',
+                            backgroundColor: isChecked ? 'var(--brand-green)' : '#FFFFFF',
+                            color: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
-                        <span>{extra.label}</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--brand-dark)' }}>
+                          {extra.label}
+                        </span>
                       </div>
-                      <span className="text-[var(--red)]">+₹{extra.price}</span>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-primary)' }}>
+                        +${extra.price.toFixed(2)}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Cooking Notes */}
+            {/* Chef Notes */}
             <div>
-              <div className="text-xs font-black uppercase text-gray-800 mb-1 flex items-center gap-1">
-                <MessageSquare className="w-3.5 h-3.5" /> SPECIAL INSTRUCTIONS FOR CHEF
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand-dark)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <MessageSquare className="w-4 h-4" />
+                <span>Special Instructions</span>
               </div>
               <textarea
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}
-                placeholder="e.g. Less oil, make sauce extra thick, no onion/garlic..."
+                placeholder="e.g. Extra napkins, dressing on side, allergy notes..."
                 rows={2}
-                className="w-full p-2.5 bg-white border-2 border-black text-xs font-bold focus:outline-none shadow-[2px_2px_0px_#111]"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
+                  border: '1px solid #EFEAE2',
+                  backgroundColor: '#FAF5EE',
+                  fontSize: '0.85rem',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  resize: 'none'
+                }}
               />
             </div>
           </div>
 
-          {/* Footer Quantity & Add to Cart Action */}
-          <div className="bg-white border-t-4 border-black p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center border-3 border-black bg-[var(--cream)] shadow-[2px_2px_0px_#111]">
+          {/* Footer Bar */}
+          <div
+            style={{
+              padding: '1.25rem 1.5rem',
+              borderTop: '1px solid #EFEAE2',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              backgroundColor: '#FAF5EE'
+            }}
+          >
+            {/* Quantity Selector */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '9999px',
+                border: '1px solid #ECE7DF',
+                padding: '0.2rem'
+              }}
+            >
               <button
+                type="button"
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-10 h-10 border-r-2 border-black font-black text-lg hover:bg-black hover:text-white transition-all flex items-center justify-center"
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--brand-dark)'
+                }}
               >
                 <Minus className="w-4 h-4" />
               </button>
-              <span className="w-10 text-center font-black text-base">{quantity}</span>
+              <span style={{ width: '32px', textAlign: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
+                {quantity}
+              </span>
               <button
+                type="button"
                 onClick={() => setQuantity(quantity + 1)}
-                className="w-10 h-10 border-l-2 border-black font-black text-lg hover:bg-black hover:text-white transition-all flex items-center justify-center"
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--brand-dark)'
+                }}
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Add to Bag Button */}
             <button
+              type="button"
               onClick={handleConfirmAdd}
-              className="flex-1 py-3 px-4 bg-[var(--yellow)] text-black border-3 border-black font-black text-sm uppercase shadow-[4px_4px_0px_#111] hover:bg-[var(--red)] hover:text-white transition-all flex items-center justify-between"
+              className="btn-primary"
+              style={{
+                flex: 1,
+                padding: '0.85rem 1.5rem',
+                justifyContent: 'space-between'
+              }}
             >
-              <span>ADD TO BAG 🛍️</span>
-              <span>₹{totalPrice.toFixed(0)} →</span>
+              <span>Add To Bag 🛍️</span>
+              <span>${totalPrice.toFixed(2)} →</span>
             </button>
           </div>
         </motion.div>

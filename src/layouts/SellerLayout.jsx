@@ -73,7 +73,7 @@ export default function SellerLayout() {
       >
         <div style={{ padding: '2rem 1.5rem', borderBottom: '1px solid #333' }}>
           <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--red)', cursor: 'pointer' }} onClick={() => navigate('/')}>
-            EATnaked<span style={{ fontSize: '1rem', color: 'var(--white)' }}>.PARTNER</span>
+            BigBites<span style={{ fontSize: '1rem', color: 'var(--white)' }}>.PARTNER</span>
           </h2>
           <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', opacity: 0.7 }}>
             Owner: {user?.full_name || user?.email || 'Loading...'}

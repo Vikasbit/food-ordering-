@@ -206,7 +206,7 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="customer@eatnaked.com"
+                  placeholder="customer@bigbites.com"
                   style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
                 />
               </div>
@@ -258,7 +258,7 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                 {isSubmitting
                   ? 'PROCESSING...'
                   : mode === 'login'
-                  ? 'LOGIN TO EATNAKED →'
+                  ? 'LOGIN TO BIGBITES →'
                   : mode === 'register'
                   ? 'REGISTER CUSTOMER ACCOUNT →'
                   : 'SEND RESET LINK →'}

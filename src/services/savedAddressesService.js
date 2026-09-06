@@ -1,4 +1,4 @@
-const SAVED_ADDRESSES_KEY = 'eatnaked_saved_addresses';
+const SAVED_ADDRESSES_KEY = 'bigbites_saved_addresses';
 
 export const DEFAULT_SAVED_ADDRESSES = [
   {

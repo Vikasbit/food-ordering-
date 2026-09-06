@@ -34,7 +34,7 @@ export default function SellerLoginPage() {
       <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ width: '100%', maxWidth: '400px' }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', margin: '0 0 0.5rem', color: 'var(--red)' }}>
-            EATnaked<span style={{ color: 'var(--black)' }}>.PARTNER</span>
+            BigBites<span style={{ color: 'var(--black)' }}>.PARTNER</span>
           </h1>
           <p style={{ margin: '0 0 2rem', opacity: 0.8 }}>Log in to your seller dashboard.</p>
           

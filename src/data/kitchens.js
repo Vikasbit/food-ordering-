@@ -1,8 +1,8 @@
-// EATnaked Master Kitchen Hubs Database
+// BigBites Master Kitchen Hubs Database
 export const KITCHENS_DATABASE = [
   {
     id: 'delhi-cp',
-    name: 'EATnaked — Connaught Place',
+    name: 'BigBites — Connaught Place',
     city: 'DELHI',
     area: 'Connaught Place',
     address: 'Block A, Inner Circle, Connaught Place, New Delhi 110001',
@@ -18,7 +18,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'delhi-saket',
-    name: 'EATnaked — Saket',
+    name: 'BigBites — Saket',
     city: 'DELHI',
     area: 'Saket',
     address: 'Press Enclave Marg, District Centre, Saket, New Delhi 110017',
@@ -34,7 +34,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'delhi-hauzkhas',
-    name: 'EATnaked — Hauz Khas',
+    name: 'BigBites — Hauz Khas',
     city: 'DELHI',
     area: 'Hauz Khas',
     address: 'Hauz Khas Village, New Delhi 110016',
@@ -50,7 +50,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'delhi-vasantkunj',
-    name: 'EATnaked — Vasant Kunj',
+    name: 'BigBites — Vasant Kunj',
     city: 'DELHI',
     area: 'Vasant Kunj',
     address: 'Nelson Mandela Marg, Vasant Kunj, New Delhi 110070',
@@ -66,7 +66,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'gurgaon-cybercity',
-    name: 'EATnaked — Gurgaon / Cyber City',
+    name: 'BigBites — Gurgaon / Cyber City',
     city: 'GURGAON',
     area: 'Cyber City',
     address: 'DLF Cyber City, Phase 2, Gurugram, Haryana 122002',
@@ -82,7 +82,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'noida-sec18',
-    name: 'EATnaked — Noida Sector 18',
+    name: 'BigBites — Noida Sector 18',
     city: 'NOIDA',
     area: 'Sector 18',
     address: 'Sector 18 Market, Noida, Uttar Pradesh 201301',
@@ -98,7 +98,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'mumbai-bandra',
-    name: 'EATnaked — Mumbai Bandra',
+    name: 'BigBites — Mumbai Bandra',
     city: 'MUMBAI',
     area: 'Bandra West',
     address: 'Hill Road, Bandra West, Mumbai, Maharashtra 400050',
@@ -114,7 +114,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'lucknow-hazratganj',
-    name: 'EATnaked — Lucknow Hazratganj',
+    name: 'BigBites — Lucknow Hazratganj',
     city: 'LUCKNOW',
     area: 'Hazratganj',
     address: 'MG Marg, Hazratganj, Lucknow, Uttar Pradesh 226001',
@@ -130,7 +130,7 @@ export const KITCHENS_DATABASE = [
   },
   {
     id: 'bengaluru-indiranagar',
-    name: 'EATnaked — Bengaluru Indiranagar',
+    name: 'BigBites — Bengaluru Indiranagar',
     city: 'BENGALURU',
     area: 'Indiranagar',
     address: '100 Feet Road, Indiranagar, Bengaluru, Karnataka 560038',

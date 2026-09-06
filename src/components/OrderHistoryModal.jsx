@@ -119,7 +119,7 @@ export default function OrderHistoryModal({ isOpen, onClose, orders, onReorder }
             {/* Invoice Header */}
             <div className="border-b-4 border-black pb-4 mb-4 flex justify-between items-start">
               <div>
-                <h1 className="font-black text-2xl text-[var(--red)] tracking-tight">EATnaked KITCHENS INDIA</h1>
+                <h1 className="font-black text-2xl text-[var(--red)] tracking-tight">BigBites KITCHENS INDIA</h1>
                 <p className="text-xs font-bold text-gray-700">Official GST Tax Invoice / Cash Memo</p>
                 <p className="text-[10px] font-semibold text-gray-500">GSTIN: 07AAAAA0000A1Z5 • FSSAI Lic No: 10019011000123</p>
               </div>

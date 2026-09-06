@@ -14,12 +14,19 @@ import { useCart } from '../context/CartContext';
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cartItems, handleRemoveItem, handleUpdateQuantity, deliveryLocation } = useCart();
+  const { 
+    cartItems, 
+    handleRemoveItem, 
+    handleUpdateQuantity, 
+    deliveryLocation,
+    isLocationModalOpen,
+    openLocationModal,
+    closeLocationModal
+  } = useCart();
 
   const [cartOpen, setCartOpen] = useState(false);
   const [customerAuthOpen, setCustomerAuthOpen] = useState(false);
   const [sellerAuthOpen, setSellerAuthOpen] = useState(false);
-  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
 
   return (
@@ -31,7 +38,7 @@ export default function MainLayout() {
         onOpenCart={() => setCartOpen(true)}
         onOpenOrders={() => setOrderHistoryOpen(true)}
         deliveryLocation={deliveryLocation}
-        onOpenLocationPicker={() => setLocationPickerOpen(true)}
+        onOpenLocationPicker={openLocationModal}
         onOpenAuth={() => setCustomerAuthOpen(true)}
         onOpenSellerPortal={() => {
           if (user?.role === 'seller' || user?.role === 'admin') {
@@ -79,10 +86,10 @@ export default function MainLayout() {
       />
 
       <LocationPickerModal
-        isOpen={locationPickerOpen}
-        onClose={() => setLocationPickerOpen(false)}
+        isOpen={isLocationModalOpen}
+        onClose={closeLocationModal}
         currentLocation={deliveryLocation}
-        onSelectLocation={(loc) => {}} // Handle globally if needed
+        onSelectLocation={(loc) => {}}
       />
 
       <OrderHistoryModal

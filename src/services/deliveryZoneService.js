@@ -27,7 +27,7 @@ export function estimateTravelTimeMin(distanceKm) {
 }
 
 /**
- * Evaluates all EATnaked kitchens for a user's delivery location
+ * Evaluates all BigBites kitchens for a user's delivery location
  * Ranks by: 1. Delivery Availability, 2. Travel ETA, 3. Distance, 4. Prep Time
  */
 export function findNearestServingKitchen(userLat, userLng) {

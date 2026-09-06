@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 
-export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLocation, onOpenLocationPicker, onOpenAuth, onOpenSellerPortal, currentUser }) {
+export default function Navbar({
+  onOpenCart,
+  cartCount = 0,
+  onOpenOrders,
+  deliveryLocation,
+  onOpenLocationPicker,
+  onOpenAuth,
+  onOpenSellerPortal,
+  currentUser,
+  onOpenSearch
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -21,225 +31,408 @@ export default function Navbar({ onOpenCart, cartCount, onOpenOrders, deliveryLo
           left: 0,
           right: 0,
           zIndex: 1000,
-          backgroundColor: scrolled ? 'var(--cream)' : 'transparent',
-          borderBottom: scrolled ? 'var(--border-thick)' : 'none',
+          backgroundColor: scrolled ? 'rgba(251, 249, 245, 0.96)' : 'rgba(251, 249, 245, 0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: scrolled ? '1px solid #ECE7DF' : '1px solid transparent',
           transition: 'all 0.3s ease',
-          padding: scrolled ? '0.8rem 2rem' : '1.5rem 2rem'
+          padding: scrolled ? '0.75rem 2rem' : '1.1rem 2rem'
         }}
       >
         <div
           style={{
-            maxWidth: '1400px',
+            maxWidth: '1280px',
             margin: '0 auto',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            gap: '1.5rem'
           }}
         >
-          {/* LEFT: EATnaked Logo */}
+          {/* Brand Logo - BIGBITES */}
           <a
-            href="#hero"
+            href="/"
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.8rem',
-              color: 'var(--red)',
               textDecoration: 'none',
-              letterSpacing: '-0.03em',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem'
+              gap: '0.4rem',
+              lineHeight: 1
             }}
-            data-cursor="HOME"
           >
-            <span>EATnaked</span>
-            <span style={{ fontSize: '0.9rem', color: 'var(--black)', fontFamily: 'var(--font-body)', fontWeight: 700 }}>.IN</span>
+            <span
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '1.85rem',
+                fontWeight: 800,
+                color: 'var(--brand-dark)',
+                letterSpacing: '-0.03em',
+                display: 'flex',
+                alignItems: 'baseline'
+              }}
+            >
+              BIG<span style={{ color: 'var(--brand-primary)' }}>BITES</span>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--brand-primary)', marginLeft: '3px', display: 'inline-block' }}></span>
+            </span>
           </a>
 
-          {/* CENTER: Navigation Links (Desktop) */}
+          {/* Center Links (Desktop) */}
           <nav
-            className="desktop-nav"
+            className="navbar-desktop-nav"
             style={{
               display: 'flex',
-              gap: '2rem',
-              alignItems: 'center'
+              alignItems: 'center',
+              gap: '2.2rem'
             }}
           >
-            {['Menu', 'Our Food', 'Our Story', 'Locations'].map((item) => (
+            {[
+              { label: 'Home', href: '#' },
+              { label: 'Restaurants', href: '#restaurants' },
+              { label: 'Categories', href: '#categories' },
+              { label: 'Offers', href: '#offers' }
+            ].map((link, idx) => (
               <a
-                key={item}
-                href={`#${item.toLowerCase().replace(' ', '-')}`}
+                key={link.label}
+                href={link.href}
                 style={{
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  textTransform: 'uppercase',
-                  color: 'var(--black)',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '0.92rem',
+                  fontWeight: idx === 0 ? 700 : 500,
+                  color: idx === 0 ? 'var(--brand-primary)' : 'var(--brand-dark)',
                   textDecoration: 'none',
-                  transition: 'color 0.2s ease'
+                  transition: 'color 0.2s ease',
+                  position: 'relative'
                 }}
-                onMouseEnter={(e) => (e.target.style.color = 'var(--red)')}
-                onMouseLeave={(e) => (e.target.style.color = 'var(--black)')}
-                data-cursor="GO"
+                onMouseEnter={(e) => (e.target.style.color = 'var(--brand-primary)')}
+                onMouseLeave={(e) => (e.target.style.color = idx === 0 ? 'var(--brand-primary)' : 'var(--brand-dark)')}
               >
-                {item}
+                {link.label}
               </a>
             ))}
           </nav>
 
-          {/* RIGHT: Location + Account Auth + Orders + View Bag */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'nowrap' }}>
+          {/* Right Controls */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.85rem'
+            }}
+          >
+            {/* Functional Location Selector */}
             <button
+              type="button"
               onClick={onOpenLocationPicker}
-              className="btn-editorial-outline"
+              className="delivery-pill-btn"
+              title={`Delivery: ${deliveryLocation?.address || 'Click to set location'}`}
               style={{
-                padding: '0.45rem 0.8rem',
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--white)',
-                color: 'var(--black)',
-                borderColor: 'var(--black)',
-                boxShadow: '2px 2px 0px var(--black)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.3rem',
-                maxWidth: '180px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <span>📍</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {deliveryLocation?.label ? `${deliveryLocation.label}: ` : ''}{deliveryLocation?.address?.split(',')[0] || 'Connaught Place'}
-              </span>
-            </button>
-
-            <button
-              onClick={onOpenAuth}
-              style={{
-                padding: '0.45rem 0.75rem',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--white)',
-                color: 'var(--black)',
-                border: 'var(--border-thick)',
-                boxShadow: '2px 2px 0px var(--black)',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '9999px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E5E0D8',
+                fontSize: '0.82rem',
+                color: 'var(--brand-dark)',
                 cursor: 'pointer',
-                whiteSpace: 'nowrap'
+                maxWidth: '220px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                transition: 'border-color 0.2s, background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--brand-primary)';
+                e.currentTarget.style.backgroundColor = '#FFFBF7';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#E5E0D8';
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
               }}
             >
-              👤 {currentUser ? (currentUser.full_name?.split(' ')[0] || 'ACCOUNT') : 'LOGIN'}
+              <span style={{ color: 'var(--brand-primary)', fontSize: '0.95rem' }}>📍</span>
+              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {deliveryLocation?.address ? deliveryLocation.address.split(',')[0] : 'Connaught Place'}
+              </span>
+              <span style={{ fontSize: '0.7rem', color: '#78716C', marginLeft: '2px' }}>▼</span>
             </button>
 
+            {/* Search Icon */}
             <button
-              onClick={onOpenOrders}
-              className="btn-editorial-outline"
+              type="button"
+              onClick={onOpenSearch || (() => {
+                const searchEl = document.getElementById('search-input') || document.getElementById('menu');
+                if (searchEl) searchEl.scrollIntoView({ behavior: 'smooth' });
+              })}
+              title="Search menu"
               style={{
-                padding: '0.45rem 0.75rem',
-                fontSize: '0.75rem',
-                backgroundColor: 'var(--yellow)',
-                color: 'var(--black)',
-                borderColor: 'var(--black)',
-                boxShadow: '2px 2px 0px var(--black)',
-                whiteSpace: 'nowrap'
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--brand-dark)',
+                padding: '0.4rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                transition: 'color 0.2s ease'
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--brand-dark)')}
             >
-              📜 ORDERS
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
             </button>
 
+            {/* User Profile / Auth */}
             <button
+              type="button"
+              onClick={onOpenAuth}
+              title={currentUser ? `Signed in as ${currentUser.full_name || 'User'}` : 'Sign In'}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--brand-dark)',
+                padding: '0.4rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--brand-dark)')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </button>
+
+            {/* Cart Icon with Counter Badge */}
+            <button
+              type="button"
               onClick={onOpenCart}
-              className="btn-editorial"
+              title="View Cart"
               style={{
-                padding: '0.5rem 1.1rem',
-                fontSize: '0.85rem',
-                backgroundColor: 'var(--red)',
-                color: 'var(--white)',
-                boxShadow: '3px 3px 0px var(--black)',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer'
+                position: 'relative',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--brand-dark)',
+                padding: '0.4rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--brand-dark)')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              {cartCount > 0 ? (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-4px',
+                    backgroundColor: 'var(--brand-primary)',
+                    color: '#FFFFFF',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 5px rgba(200,69,35,0.4)'
+                  }}
+                >
+                  {cartCount}
+                </span>
+              ) : (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-2px',
+                    right: '-4px',
+                    backgroundColor: 'var(--brand-primary)',
+                    color: '#FFFFFF',
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  0
+                </span>
+              )}
+            </button>
+
+            {/* Order Now Pill Button */}
+            <a
+              href="#menu"
+              className="btn-primary navbar-order-btn"
+              style={{
+                padding: '0.6rem 1.4rem',
+                fontSize: '0.88rem'
               }}
             >
-              🛍️ BAG ({cartCount || 0})
-            </button>
-          </div>
+              Order Now
+            </a>
 
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Menu Toggle Button */}
             <button
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="mobile-toggle"
+              className="navbar-mobile-toggle"
+              aria-label="Toggle Navigation Menu"
               style={{
                 display: 'none',
-                background: 'var(--black)',
-                color: 'var(--cream)',
+                background: 'none',
                 border: 'none',
-                padding: '0.6rem 1rem',
-                fontFamily: 'var(--font-display)',
+                color: 'var(--brand-dark)',
+                padding: '0.4rem',
                 cursor: 'pointer'
               }}
             >
-              {mobileOpen ? 'CLOSE' : 'MENU'}
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {mobileOpen ? (
+                  <>
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </>
+                ) : (
+                  <>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </>
+                )}
+              </svg>
             </button>
+          </div>
         </div>
       </header>
 
-      {/* Mobile Fullscreen Menu Overlay */}
+      {/* Mobile Drawer Menu */}
       {mobileOpen && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'var(--red)',
-            color: 'var(--cream)',
+            top: '64px',
+            backgroundColor: 'rgba(251, 249, 245, 0.98)',
+            backdropFilter: 'blur(16px)',
             zIndex: 999,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '2rem',
-            padding: '2rem'
+            padding: '2rem',
+            gap: '1.5rem',
+            borderTop: '1px solid #ECE7DF'
           }}
         >
-          {['Menu', 'Our Food', 'Our Story', 'Locations'].map((item) => (
+          {[
+            { label: 'Home', href: '#' },
+            { label: 'Restaurants', href: '#restaurants' },
+            { label: 'Categories', href: '#categories' },
+            { label: 'Offers', href: '#offers' }
+          ].map((item) => (
             <a
-              key={item}
-              href={`#${item.toLowerCase().replace(' ', '-')}`}
+              key={item.label}
+              href={item.href}
               onClick={() => setMobileOpen(false)}
               style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '3rem',
-                color: 'var(--cream)',
+                fontFamily: 'var(--font-serif)',
+                fontSize: '1.4rem',
+                color: 'var(--brand-dark)',
                 textDecoration: 'none',
-                textTransform: 'uppercase'
+                fontWeight: 600
               }}
             >
-              {item}
+              {item.label}
             </a>
           ))}
+
+          <div style={{ height: '1px', backgroundColor: '#ECE7DF', margin: '0.5rem 0' }} />
+
           <button
+            type="button"
             onClick={() => {
               setMobileOpen(false);
-              onOpenCart();
+              onOpenLocationPicker();
             }}
-            className="btn-editorial"
-            style={{
-              backgroundColor: 'var(--black)',
-              color: 'var(--cream)',
-              marginTop: '1rem',
-              fontSize: '1.2rem'
-            }}
+            className="btn-outline"
+            style={{ width: '100%', justifyContent: 'flex-start' }}
           >
-            ORDER NOW ({cartCount}) →
+            📍 {deliveryLocation?.address ? deliveryLocation.address.split(',')[0] : 'Set Delivery Location'}
           </button>
+
+          {onOpenOrders && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                onOpenOrders();
+              }}
+              className="btn-outline"
+              style={{ width: '100%', justifyContent: 'flex-start' }}
+            >
+              📜 Order History & Tracking
+            </button>
+          )}
+
+          {onOpenSellerPortal && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                onOpenSellerPortal();
+              }}
+              className="btn-outline"
+              style={{ width: '100%', justifyContent: 'flex-start' }}
+            >
+              🏪 Restaurant Partner Portal
+            </button>
+          )}
+
+          <a
+            href="#menu"
+            onClick={() => setMobileOpen(false)}
+            className="btn-primary"
+            style={{ width: '100%', textAlign: 'center', marginTop: 'auto' }}
+          >
+            Order Now ({cartCount})
+          </a>
         </div>
       )}
 
       <style>{`
-        @media (max-width: 900px) {
-          .desktop-nav {
+        @media (max-width: 860px) {
+          .navbar-desktop-nav {
             display: none !important;
           }
-          .mobile-toggle {
+          .navbar-mobile-toggle {
             display: block !important;
+          }
+          .delivery-pill-btn {
+            display: none !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .navbar-order-btn {
+            display: none !important;
           }
         }
       `}</style>

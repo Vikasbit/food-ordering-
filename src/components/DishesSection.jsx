@@ -33,13 +33,13 @@ export default function DishesSection({ onSelectDish, onAddToCart, onCustomizeDi
               TWO-SIDED MARKETPLACE KITCHENS & SELLER STORES
             </span>
             <h3 style={{ margin: '0.2rem 0 0', fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--cream)' }}>
-              EXPLORE NEARBY EATNAKED RESTAURANT PARTNERS & MENUS
+              EXPLORE NEARBY BIGBITES RESTAURANT PARTNERS & MENUS
             </h3>
           </div>
           <button
             onClick={() => onOpenRestaurantPage && onOpenRestaurantPage({
               id: 'rest-delhi-cp',
-              name: 'EATnaked — Connaught Place',
+              name: 'BigBites — Connaught Place',
               cuisine: 'North Indian · Tandoor · Thalis',
               address: 'Block A, Inner Circle, Connaught Place, New Delhi 110001',
               rating: 4.8,

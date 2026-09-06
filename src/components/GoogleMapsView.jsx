@@ -1,6 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { loadGoogleMapsScript } from '../services/googleMapsLoader';
+import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import { loadGoogleMapsScript, BIGBITES_MAP_STYLES } from '../services/googleMapsLoader';
 
+/**
+ * Lightweight 2D Google Map Component (Requirements 2, 10, 11, 12, 15, 16)
+ * - Single initialization via React ref
+ * - 2D Markers for Restaurant/Pickup, Customer/Delivery, and Driver (with heading rotation)
+ * - Google Maps DirectionsService calculation when route starts
+ * - Graceful fallback message if Google Maps is unavailable
+ */
 export default function GoogleMapsView({
   customerLocation,
   kitchenLocation,
@@ -14,37 +22,53 @@ export default function GoogleMapsView({
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
+  const directionsRendererRef = useRef(null);
   const polylineRef = useRef(null);
-  const [mapError, setMapError] = useState(null);
-  const [googleMapsReady, setGoogleMapsReady] = useState(false);
+  
+  const [mapEngine, setMapEngine] = useState(null); // 'google' | 'leaflet'
+  const [errorNotice, setErrorNotice] = useState('');
 
-  // Initialize Google Maps or fallback
+  // 1. Initialize Map Once (Requirement 15)
   useEffect(() => {
+    if (!containerRef.current) return;
     let isMounted = true;
 
     loadGoogleMapsScript()
       .then((maps) => {
         if (!isMounted || !containerRef.current) return;
-        setGoogleMapsReady(true);
+        setMapEngine('google');
+        setErrorNotice('');
 
-        const centerLat = customerLocation?.lat || kitchenLocation?.lat || 28.6315;
-        const centerLng = customerLocation?.lng || kitchenLocation?.lng || 77.2167;
+        const centerLat = customerLocation?.lat || customerLocation?.latitude || kitchenLocation?.lat || 28.6315;
+        const centerLng = customerLocation?.lng || customerLocation?.longitude || kitchenLocation?.lng || 77.2167;
 
         if (!mapRef.current) {
-          const mapOptions = {
+          const mapInstance = new maps.Map(containerRef.current, {
             center: { lat: centerLat, lng: centerLng },
             zoom: 14,
-            mapId: 'EATNAKED_MAP_SYSTEM', // Required for AdvancedMarkerElement
+            styles: BIGBITES_MAP_STYLES,
             disableDefaultUI: false,
             zoomControl: true,
             streetViewControl: false,
             mapTypeControl: false,
             fullscreenControl: true,
             gestureHandling: interactive ? 'greedy' : 'none'
-          };
+          });
 
-          const mapInstance = new maps.Map(containerRef.current, mapOptions);
           mapRef.current = mapInstance;
+
+          // Directions renderer for Routes API calculation (Requirement 12)
+          if (maps.DirectionsRenderer) {
+            directionsRendererRef.current = new maps.DirectionsRenderer({
+              map: mapInstance,
+              suppressMarkers: true,
+              polylineOptions: {
+                strokeColor: '#C84523',
+                strokeWeight: 5,
+                strokeOpacity: 0.85
+              }
+            });
+          }
 
           if (onMapClick) {
             mapInstance.addListener('click', (e) => {
@@ -54,284 +78,252 @@ export default function GoogleMapsView({
         }
       })
       .catch((err) => {
-        if (!isMounted) return;
-        console.warn('Google Maps API Key not configured or network fallback activated. Using Leaflet Interactive Map:', err.message);
-        setMapError('LEAFLET_FALLBACK');
+        if (!isMounted || !containerRef.current) return;
+        console.warn('Google Maps notice:', err.message);
+        setMapEngine('leaflet');
+        setErrorNotice('Map service is temporarily unavailable.');
+
+        const centerLat = customerLocation?.lat || customerLocation?.latitude || kitchenLocation?.lat || 28.6315;
+        const centerLng = customerLocation?.lng || customerLocation?.longitude || kitchenLocation?.lng || 77.2167;
+
+        if (!mapRef.current) {
+          const leafletMap = L.map(containerRef.current, {
+            center: [centerLat, centerLng],
+            zoom: 14,
+            zoomControl: interactive,
+            dragging: interactive,
+            touchZoom: interactive,
+            scrollWheelZoom: interactive
+          });
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+          }).addTo(leafletMap);
+
+          if (onMapClick) {
+            leafletMap.on('click', (e) => {
+              onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+            });
+          }
+
+          mapRef.current = leafletMap;
+        }
       });
 
     return () => {
       isMounted = false;
+      if (mapRef.current && mapEngine === 'leaflet') {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
-  }, [customerLocation?.lat, customerLocation?.lng, kitchenLocation?.lat, kitchenLocation?.lng, interactive, onMapClick]);
+  }, [interactive]);
 
-  // Handle Markers & Routes when Google Maps is ready
+  // 2. Google Maps Markers & Route Updates
   useEffect(() => {
-    if (!googleMapsReady || !mapRef.current || !window.google?.maps) return;
+    if (mapEngine !== 'google' || !mapRef.current || !window.google?.maps) return;
 
     const maps = window.google.maps;
     const map = mapRef.current;
     const bounds = new maps.LatLngBounds();
     let hasPoint = false;
 
-    // Helper for HTML Marker Elements
-    const createHtmlMarkerElement = (type, label) => {
-      const el = document.createElement('div');
-      el.className = `custom-map-marker marker-${type}`;
+    // Helper: 2D Custom Marker Icon with heading rotation support (Requirement 11)
+    const createPin = (color, emoji, heading = 0) => ({
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
+          <g transform="rotate(${heading}, 20, 24)">
+            <path d="M20 0C9 0 0 9 0 20c0 15 20 28 20 28s20-13 20-28C40 9 31 0 20 0z" fill="${color}" stroke="#1C1917" stroke-width="2"/>
+            <circle cx="20" cy="19" r="11" fill="#FFFFFF"/>
+            <text x="20" y="24" font-family="sans-serif" font-size="12" text-anchor="middle">${emoji}</text>
+          </g>
+        </svg>
+      `)}`,
+      scaledSize: new maps.Size(40, 48),
+      anchor: new maps.Point(20, 48)
+    });
 
-      let bg = '#F20D0D';
-      let icon = '📍';
-      let border = '#111';
+    // 1. Customer Marker
+    const cLat = customerLocation?.lat || customerLocation?.latitude;
+    const cLng = customerLocation?.lng || customerLocation?.longitude;
 
-      if (type === 'customer') {
-        bg = '#FFC400';
-        icon = '🏠';
-        border = '#111';
-      } else if (type === 'kitchen') {
-        bg = '#111111';
-        icon = '🍳';
-        border = '#F20D0D';
-      } else if (type === 'driver') {
-        bg = '#F20D0D';
-        icon = '🛵';
-        border = '#FFC400';
-      }
-
-      el.innerHTML = `
-        <div style="
-          background: ${bg};
-          color: #FFF;
-          border: 2px solid ${border};
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          border-radius: 20px;
-          padding: 6px 12px;
-          font-family: 'Archivo Black', sans-serif;
-          font-size: 11px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          white-space: nowrap;
-          transform: translate(-50%, -100%);
-          cursor: pointer;
-        ">
-          <span style="font-size: 14px;">${icon}</span>
-          <span style="font-weight: 800; color: ${type === 'customer' ? '#111' : '#FFF'}">${label}</span>
-        </div>
-      `;
-      return el;
-    };
-
-    // 1. Customer Delivery Address Marker
-    if (customerLocation?.lat && customerLocation?.lng) {
-      const pos = { lat: customerLocation.lat, lng: customerLocation.lng };
+    if (cLat && cLng) {
+      const pos = { lat: Number(cLat), lng: Number(cLng) };
       bounds.extend(pos);
       hasPoint = true;
 
       if (!markersRef.current.customer) {
-        if (maps.marker?.AdvancedMarkerElement) {
-          markersRef.current.customer = new maps.marker.AdvancedMarkerElement({
-            map,
-            position: pos,
-            content: createHtmlMarkerElement('customer', customerLocation.label || 'DELIVERY HOME')
-          });
-        } else {
-          markersRef.current.customer = new maps.Marker({
-            map,
-            position: pos,
-            title: customerLocation.address || 'Delivery Address',
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#FFC400',
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: '#111'
-            }
-          });
-        }
+        markersRef.current.customer = new maps.Marker({
+          map,
+          position: pos,
+          title: customerLocation.address || 'Delivery Address',
+          icon: createPin('#EAB308', '🏠', 0)
+        });
       } else {
-        if (markersRef.current.customer.setPosition) {
-          markersRef.current.customer.setPosition(pos);
-        } else {
-          markersRef.current.customer.position = pos;
-        }
+        markersRef.current.customer.setPosition(pos);
       }
     }
 
-    // 2. Kitchen / Restaurant Origin Marker
-    if (kitchenLocation?.lat && kitchenLocation?.lng) {
-      const pos = { lat: kitchenLocation.lat, lng: kitchenLocation.lng };
+    // 2. Kitchen / Restaurant Marker
+    const kLat = kitchenLocation?.lat || kitchenLocation?.latitude;
+    const kLng = kitchenLocation?.lng || kitchenLocation?.longitude;
+
+    if (kLat && kLng) {
+      const pos = { lat: Number(kLat), lng: Number(kLng) };
       bounds.extend(pos);
       hasPoint = true;
 
       if (!markersRef.current.kitchen) {
-        if (maps.marker?.AdvancedMarkerElement) {
-          markersRef.current.kitchen = new maps.marker.AdvancedMarkerElement({
-            map,
-            position: pos,
-            content: createHtmlMarkerElement('kitchen', kitchenLocation.name || 'Food Origin Kitchen')
-          });
-        } else {
-          markersRef.current.kitchen = new maps.Marker({
-            map,
-            position: pos,
-            title: kitchenLocation.name || 'Origin Kitchen',
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#111111',
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: '#F20D0D'
-            }
-          });
-        }
+        markersRef.current.kitchen = new maps.Marker({
+          map,
+          position: pos,
+          title: kitchenLocation.name || 'Pickup Kitchen',
+          icon: createPin('#1C1917', '🍳', 0)
+        });
       } else {
-        if (markersRef.current.kitchen.setPosition) {
-          markersRef.current.kitchen.setPosition(pos);
-        } else {
-          markersRef.current.kitchen.position = pos;
-        }
+        markersRef.current.kitchen.setPosition(pos);
       }
     }
 
-    // 3. Driver Marker (Real-time animated)
-    if (driverLocation?.latitude && driverLocation?.longitude) {
-      const pos = { lat: driverLocation.latitude, lng: driverLocation.longitude };
+    // 3. Driver Marker (Rotated by heading - Requirement 11)
+    const dLat = driverLocation?.latitude || driverLocation?.lat;
+    const dLng = driverLocation?.longitude || driverLocation?.lng;
+    const dHeading = driverLocation?.heading || 0;
+
+    if (dLat && dLng) {
+      const pos = { lat: Number(dLat), lng: Number(dLng) };
       bounds.extend(pos);
       hasPoint = true;
 
       if (!markersRef.current.driver) {
-        if (maps.marker?.AdvancedMarkerElement) {
-          markersRef.current.driver = new maps.marker.AdvancedMarkerElement({
-            map,
-            position: pos,
-            content: createHtmlMarkerElement('driver', `${driverLocation.driverName || 'Rider'} (ETA: ${driverLocation.etaMinutes || 12} min)`)
-          });
-        } else {
-          markersRef.current.driver = new maps.Marker({
-            map,
-            position: pos,
-            title: driverLocation.driverName || 'Delivery Rider',
-            icon: {
-              path: maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              scale: 6,
-              fillColor: '#F20D0D',
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: '#FFF',
-              rotation: driverLocation.heading || 0
-            }
-          });
-        }
+        markersRef.current.driver = new maps.Marker({
+          map,
+          position: pos,
+          title: driverLocation.driverName || 'Delivery Partner',
+          icon: createPin('#C84523', '🛵', dHeading),
+          zIndex: 999
+        });
       } else {
-        if (markersRef.current.driver.setPosition) {
-          markersRef.current.driver.setPosition(pos);
-          if (markersRef.current.driver.setIcon && driverLocation.heading) {
-            const currentIcon = markersRef.current.driver.getIcon();
-            if (currentIcon) {
-              markersRef.current.driver.setIcon({ ...currentIcon, rotation: driverLocation.heading });
+        markersRef.current.driver.setPosition(pos);
+        markersRef.current.driver.setIcon(createPin('#C84523', '🛵', dHeading));
+      }
+    }
+
+    // 4. Google Maps Directions Route Calculation (Requirement 12)
+    if (showRoute && cLat && cLng && kLat && kLng && directionsRendererRef.current && maps.DirectionsService) {
+      const directionsService = new maps.DirectionsService();
+      
+      const origin = { lat: Number(kLat), lng: Number(kLng) };
+      const destination = { lat: Number(cLat), lng: Number(cLng) };
+
+      directionsService.route(
+        {
+          origin,
+          destination,
+          travelMode: maps.TravelMode.DRIVING
+        },
+        (result, status) => {
+          if (status === maps.DirectionsStatus.OK && result) {
+            directionsRendererRef.current.setDirections(result);
+          } else {
+            // Fallback direct geodesic polyline
+            const path = [origin, destination];
+            if (polylineRef.current) {
+              polylineRef.current.setPath(path);
+            } else {
+              polylineRef.current = new maps.Polyline({
+                path,
+                geodesic: true,
+                strokeColor: '#C84523',
+                strokeOpacity: 0.85,
+                strokeWeight: 4,
+                map
+              });
             }
           }
-        } else {
-          markersRef.current.driver.position = pos;
         }
-      }
+      );
     }
 
-    // 4. Draw Route Polyline (Kitchen -> Rider -> Customer)
-    if (showRoute && (kitchenLocation || driverLocation) && customerLocation) {
-      const routePoints = [];
-      if (kitchenLocation) routePoints.push({ lat: kitchenLocation.lat, lng: kitchenLocation.lng });
-      if (driverLocation) routePoints.push({ lat: driverLocation.latitude, lng: driverLocation.longitude });
-      if (customerLocation) routePoints.push({ lat: customerLocation.lat, lng: customerLocation.lng });
-
-      if (polylineRef.current) {
-        polylineRef.current.setPath(routePoints);
-      } else {
-        polylineRef.current = new maps.Polyline({
-          path: routePoints,
-          geodesic: true,
-          strokeColor: '#F20D0D',
-          strokeOpacity: 0.85,
-          strokeWeight: 5,
-          map
-        });
-      }
+    if (hasPoint && interactive && !showRoute) {
+      map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
     }
+  }, [mapEngine, customerLocation, kitchenLocation, driverLocation, showRoute, interactive]);
 
-    if (hasPoint && interactive) {
-      map.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
-    }
-  }, [googleMapsReady, customerLocation, kitchenLocation, driverLocation, showRoute, interactive]);
-
-  // Leaflet Fallback implementation when Google Maps API key is not active
+  // 3. Leaflet Fallback Markers and Route
   useEffect(() => {
-    if (mapError !== 'LEAFLET_FALLBACK' || !containerRef.current) return;
+    if (mapEngine !== 'leaflet' || !mapRef.current) return;
+    const map = mapRef.current;
 
-    if (window.L) {
-      const centerLat = customerLocation?.lat || kitchenLocation?.lat || 28.6315;
-      const centerLng = customerLocation?.lng || kitchenLocation?.lng || 77.2167;
-
-      if (!mapRef.current) {
-        const leafletMap = window.L.map(containerRef.current, {
-          center: [centerLat, centerLng],
-          zoom: 14,
-          zoomControl: true
-        });
-
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(leafletMap);
-
-        mapRef.current = leafletMap;
-      }
-
-      const map = mapRef.current;
-
-      // Add customer pin
-      if (customerLocation?.lat && customerLocation?.lng) {
-        const custIcon = window.L.divIcon({
-          className: 'custom-leaflet-pin',
-          html: `<div style="background:#FFC400; color:#111; font-weight:900; padding:5px 10px; border:2px solid #111; border-radius:15px; font-size:11px; box-shadow:2px 2px 0px #111;">🏠 ${customerLocation.label || 'DELIVERY HOME'}</div>`,
-          iconSize: [120, 30],
-          iconAnchor: [60, 30]
-        });
-        window.L.marker([customerLocation.lat, customerLocation.lng], { icon: custIcon }).addTo(map);
-      }
-
-      // Add kitchen pin
-      if (kitchenLocation?.lat && kitchenLocation?.lng) {
-        const kitchIcon = window.L.divIcon({
-          className: 'custom-leaflet-pin',
-          html: `<div style="background:#111; color:#FFF; font-weight:900; padding:5px 10px; border:2px solid #F20D0D; border-radius:15px; font-size:11px; box-shadow:2px 2px 0px #111;">🍳 ${kitchenLocation.name || 'Food Origin Kitchen'}</div>`,
-          iconSize: [140, 30],
-          iconAnchor: [70, 30]
-        });
-        window.L.marker([kitchenLocation.lat, kitchenLocation.lng], { icon: kitchIcon }).addTo(map);
-      }
-
-      // Add driver pin
-      if (driverLocation?.latitude && driverLocation?.longitude) {
-        const drvIcon = window.L.divIcon({
-          className: 'custom-leaflet-pin',
-          html: `<div style="background:#F20D0D; color:#FFF; font-weight:900; padding:5px 10px; border:2px solid #FFC400; border-radius:15px; font-size:11px; box-shadow:2px 2px 0px #111;">🛵 ${driverLocation.driverName || 'Rahul Rider'} (~${driverLocation.etaMinutes || 12} min)</div>`,
-          iconSize: [160, 30],
-          iconAnchor: [80, 30]
-        });
-        window.L.marker([driverLocation.latitude, driverLocation.longitude], { icon: drvIcon }).addTo(map);
-      }
-
-      // Draw polyline
-      if (showRoute && (kitchenLocation || driverLocation) && customerLocation) {
-        const latlngs = [
-          ...(kitchenLocation ? [[kitchenLocation.lat, kitchenLocation.lng]] : []),
-          ...(driverLocation ? [[driverLocation.latitude, driverLocation.longitude]] : []),
-          [customerLocation.lat, customerLocation.lng]
-        ];
-        window.L.polyline(latlngs, { color: '#F20D0D', weight: 4, opacity: 0.8 }).addTo(map);
-      }
+    Object.values(markersRef.current).forEach((m) => {
+      if (m && map.hasLayer(m)) map.removeLayer(m);
+    });
+    markersRef.current = {};
+    if (polylineRef.current && map.hasLayer(polylineRef.current)) {
+      map.removeLayer(polylineRef.current);
+      polylineRef.current = null;
     }
-  }, [mapError, customerLocation, kitchenLocation, driverLocation, showRoute]);
+
+    const bounds = [];
+
+    const cLat = customerLocation?.lat || customerLocation?.latitude;
+    const cLng = customerLocation?.lng || customerLocation?.longitude;
+    if (cLat && cLng) {
+      const pos = [Number(cLat), Number(cLng)];
+      bounds.push(pos);
+
+      const custIcon = L.divIcon({
+        className: 'custom-leaflet-customer',
+        html: `<div style="background:#EAB308; color:#1C1917; font-weight:800; padding:4px 10px; border-radius:12px; font-size:11px; box-shadow:0 2px 8px rgba(0,0,0,0.15); white-space:nowrap; border:1px solid #1C1917; transform:translate(-50%, -100%);">🏠 ${customerLocation.label || 'DELIVERY'}</div>`,
+        iconSize: [80, 24],
+        iconAnchor: [40, 24]
+      });
+
+      markersRef.current.customer = L.marker(pos, { icon: custIcon }).addTo(map);
+    }
+
+    const kLat = kitchenLocation?.lat || kitchenLocation?.latitude;
+    const kLng = kitchenLocation?.lng || kitchenLocation?.longitude;
+    if (kLat && kLng) {
+      const pos = [Number(kLat), Number(kLng)];
+      bounds.push(pos);
+
+      const kitchIcon = L.divIcon({
+        className: 'custom-leaflet-kitchen',
+        html: `<div style="background:#1C1917; color:#FFF; font-weight:800; padding:4px 10px; border-radius:12px; font-size:11px; box-shadow:0 2px 8px rgba(0,0,0,0.15); white-space:nowrap; border:1px solid #C84523; transform:translate(-50%, -100%);">🍳 ${kitchenLocation.name || 'KITCHEN'}</div>`,
+        iconSize: [90, 24],
+        iconAnchor: [45, 24]
+      });
+
+      markersRef.current.kitchen = L.marker(pos, { icon: kitchIcon }).addTo(map);
+    }
+
+    const dLat = driverLocation?.latitude || driverLocation?.lat;
+    const dLng = driverLocation?.longitude || driverLocation?.lng;
+    const dHeading = driverLocation?.heading || 0;
+
+    if (dLat && dLng) {
+      const pos = [Number(dLat), Number(dLng)];
+      bounds.push(pos);
+
+      const drvIcon = L.divIcon({
+        className: 'custom-leaflet-driver',
+        html: `<div style="background:#C84523; color:#FFF; font-weight:800; padding:4px 10px; border-radius:12px; font-size:11px; box-shadow:0 2px 8px rgba(0,0,0,0.15); white-space:nowrap; border:1px solid #FFF; transform:translate(-50%, -100%) rotate(${dHeading}deg);">🛵 RIDER</div>`,
+        iconSize: [80, 24],
+        iconAnchor: [40, 24]
+      });
+
+      markersRef.current.driver = L.marker(pos, { icon: drvIcon }).addTo(map);
+    }
+
+    if (showRoute && bounds.length >= 2) {
+      polylineRef.current = L.polyline(bounds, { color: '#C84523', weight: 4, opacity: 0.85 }).addTo(map);
+    }
+
+    if (bounds.length > 0 && interactive) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }, [mapEngine, customerLocation, kitchenLocation, driverLocation, showRoute, interactive]);
 
   return (
     <div
@@ -340,8 +332,7 @@ export default function GoogleMapsView({
         width: '100%',
         height,
         minHeight,
-        border: 'var(--border-thick)',
-        backgroundColor: '#E5E3DF',
+        backgroundColor: '#FBF9F5',
         overflow: 'hidden'
       }}
     >

@@ -84,7 +84,7 @@ export default function RestaurantSetupPage() {
         Set up your restaurant
       </h1>
       <p style={{ margin: '0 0 2rem', opacity: 0.8 }}>
-        Welcome to EATnaked Partner! Let's get your kitchen online. Your restaurant will remain in DRAFT status until you are ready to publish.
+        Welcome to BigBites Partner! Let's get your kitchen online. Your restaurant will remain in DRAFT status until you are ready to publish.
       </p>
 
       {error && (

@@ -42,7 +42,7 @@ export default function StorySection() {
               lineHeight: 1
             }}
           >
-            EATnaked
+            BigBites
           </span>
         </div>
 

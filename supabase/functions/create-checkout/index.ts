@@ -96,7 +96,7 @@ serve(async (req) => {
     }
 
     // 7. Create Pending Order in Supabase
-    const eatnakedOrderId = `EAT${Date.now()}`
+    const bigbitesOrderId = `EAT${Date.now()}`
     
     // We would insert into 'orders' here with status 'PAYMENT_PENDING'
     // For MVP phase 4, returning the ID to frontend is sufficient until webhook/verification
@@ -107,7 +107,7 @@ serve(async (req) => {
         amount: finalAmount * 100,
         currency: 'INR',
         razorpayOrderId: rzpOrder.id,
-        eatnakedOrderId
+        bigbitesOrderId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

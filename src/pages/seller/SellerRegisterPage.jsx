@@ -47,9 +47,9 @@ export default function SellerRegisterPage() {
       <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ width: '100%', maxWidth: '400px' }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', margin: '0 0 0.5rem', color: 'var(--red)' }}>
-            Partner with EATnaked
+            Partner with BigBites
           </h1>
-          <p style={{ margin: '0 0 2rem', opacity: 0.8 }}>Grow your restaurant with EATnaked.</p>
+          <p style={{ margin: '0 0 2rem', opacity: 0.8 }}>Grow your restaurant with BigBites.</p>
           
           {error && (
             <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '1rem', border: '1px solid #c62828', marginBottom: '1.5rem', fontSize: '0.9rem' }}>

@@ -1,5 +1,5 @@
 /* ============================================================
-   EATnaked Main Application Logic & View Controller
+   BigBites Main Application Logic & View Controller
    ============================================================ */
 
 let cart = [];

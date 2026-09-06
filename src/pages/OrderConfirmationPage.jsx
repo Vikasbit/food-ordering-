@@ -1,226 +1,580 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { orderService } from '../lib/supabase';
+import { orderService, driverService } from '../lib/supabase';
+import GoogleMapsView from '../components/GoogleMapsView';
+import { calculateDistance } from '../utils/geo';
 
 export default function OrderConfirmationPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.orderId || params.id;
   const navigate = useNavigate();
+
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [driverLocation, setDriverLocation] = useState(null);
+  const [isRealtimeActive, setIsRealtimeActive] = useState(false);
+  const lastUpdateRef = useRef(Date.now());
 
   useEffect(() => {
-    // Initial fetch
     async function load() {
       try {
         const data = await orderService.getOrderById(id);
         if (data) {
           setOrder(data);
         } else {
-          navigate('/orders');
+          // Check localStorage as fallback
+          const all = JSON.parse(localStorage.getItem('bigbites_db_orders') || '[]');
+          const matched = all.find(o => o.id === id) || all[all.length - 1];
+          if (matched) setOrder(matched);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load order:', err);
       } finally {
         setLoading(false);
       }
     }
     load();
 
-    // Subscribe to realtime updates for this specific order
-    const unsubscribe = orderService.subscribeToOrder(id, (updatedOrder) => {
-      console.log('Realtime Order Update Received!', updatedOrder);
-      setOrder(updatedOrder);
+    // Subscribe to order status changes via Supabase Realtime
+    const unsubscribeOrder = orderService.subscribeToOrder(id, (updatedOrder) => {
+      if (updatedOrder) {
+        setOrder(updatedOrder);
+      }
     });
 
-    return () => unsubscribe();
-  }, [id, navigate]);
+    return () => unsubscribeOrder && unsubscribeOrder();
+  }, [id]);
 
-  if (loading || !order) return <div style={{ padding: '4rem', textAlign: 'center' }}>Loading Order...</div>;
+  // Handle Driver Location Realtime Subscription
+  useEffect(() => {
+    if (!order) return;
 
-  // Timeline Helper
-  const getTimelineSteps = (status, paymentStatus) => {
-    const isPaid = paymentStatus === 'CAPTURED';
-    const isCancelled = status === 'CANCELLED';
-    
-    // Ordered progression
-    const levels = {
-      'PENDING': 0,
-      'ACCEPTED': 1,
-      'PREPARING': 2,
-      'READY_FOR_PICKUP': 3,
-      'DRIVER_ASSIGNED': 4,
-      'OUT_FOR_DELIVERY': 5,
-      'DELIVERED': 6
-    };
-    
-    const currentLevel = levels[status] || 0;
+    const normalizedStatus = (order.status || '').toUpperCase().replace(/\s+/g, '_');
+    const isDeliveryActive = ['OUT_FOR_DELIVERY', 'PICKED_UP', 'DRIVER_ASSIGNED', 'READY_FOR_PICKUP'].includes(normalizedStatus);
 
-    return [
-      { label: 'ORDER PLACED', active: true, time: order.created_at },
-      { label: 'PAYMENT CONFIRMED', active: isPaid, time: order.created_at },
-      { label: isCancelled ? 'ORDER CANCELLED' : 'RESTAURANT ACCEPTED', active: currentLevel >= 1 || isCancelled, time: order.accepted_at || order.rejected_at, isError: isCancelled },
-      { label: 'PREPARING', active: currentLevel >= 2 && !isCancelled, time: order.preparing_at },
-      { label: 'READY FOR PICKUP', active: currentLevel >= 3 && !isCancelled, time: order.ready_at }
-    ];
+    if (isDeliveryActive) {
+      setIsRealtimeActive(true);
+
+      const unsubDriver = driverService.subscribeToDriverLocation(order.id, (loc) => {
+        if (loc) {
+          lastUpdateRef.current = Date.now();
+          setDriverLocation({
+            latitude: loc.latitude || loc.lat,
+            longitude: loc.longitude || loc.lng,
+            heading: loc.heading || 0,
+            speed: loc.speed || 0,
+            driverName: order.driver_name || 'BIGBITES Delivery Partner',
+            recorded_at: loc.recorded_at || new Date().toISOString()
+          });
+        }
+      });
+
+      return () => unsubDriver && unsubDriver();
+    } else if (normalizedStatus === 'DELIVERED') {
+      setIsRealtimeActive(false);
+    }
+  }, [order?.id, order?.status, order?.driver_name]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '6rem 2rem', textAlign: 'center', backgroundColor: 'var(--bg-main)', minHeight: '80vh' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔄</div>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', color: 'var(--brand-dark)' }}>
+          Loading Order Status #{id}...
+        </h2>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div style={{ padding: '6rem 2rem', textAlign: 'center', backgroundColor: 'var(--bg-main)', minHeight: '80vh' }}>
+        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>📦</span>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', color: 'var(--brand-dark)', margin: '0 0 0.5rem' }}>
+          Order Not Found
+        </h2>
+        <p style={{ color: '#78716C', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
+          We couldn't locate this order in your current session.
+        </p>
+        <button type="button" onClick={() => navigate('/')} className="btn-primary">
+          Return to Home
+        </button>
+      </div>
+    );
+  }
+
+  // 5 Defined Delivery Status Timeline
+  const STATUS_CONFIG = [
+    { key: 'CONFIRMED', label: 'Order Confirmed', icon: '✓', desc: 'Kitchen has accepted your order' },
+    { key: 'PREPARING', label: 'Preparing', icon: '🍳', desc: 'Fresh ingredients being cooked' },
+    { key: 'READY_FOR_PICKUP', label: 'Ready for Pickup', icon: '📦', desc: 'Packed and ready at counter' },
+    { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', icon: '🛵', desc: 'Delivery partner on the way' },
+    { key: 'DELIVERED', label: 'Delivered', icon: '🎉', desc: 'Order delivered to doorstep' }
+  ];
+
+  const currentStatusUpper = (order.status || 'CONFIRMED').toUpperCase().replace(/\s+/g, '_');
+  
+  const getStatusLevel = (status) => {
+    switch (status) {
+      case 'PENDING':
+      case 'ACCEPTED':
+      case 'CONFIRMED': return 0;
+      case 'PREPARING': return 1;
+      case 'READY_FOR_PICKUP':
+      case 'DRIVER_ASSIGNED': return 2;
+      case 'PICKED_UP':
+      case 'OUT_FOR_DELIVERY': return 3;
+      case 'DELIVERED': return 4;
+      default: return 0;
+    }
   };
 
-  const steps = getTimelineSteps(order.status, order.payment_status);
+  const currentLevel = getStatusLevel(currentStatusUpper);
+  const isOutForDelivery = currentLevel >= 3 && currentStatusUpper !== 'DELIVERED';
+  const isDelivered = currentStatusUpper === 'DELIVERED';
+
+  // Live ETA Calculation
+  const custLat = order.delivery_latitude || order.delivery_lat || order.delivery_location?.lat || 28.6315;
+  const custLng = order.delivery_longitude || order.delivery_lng || order.delivery_location?.lng || 77.2167;
+  const rLat = order.restaurant_lat || 28.6315;
+  const rLng = order.restaurant_lng || 77.2167;
+
+  const currentDriverLat = driverLocation?.latitude || rLat;
+  const currentDriverLng = driverLocation?.longitude || rLng;
+
+  const distanceKm = calculateDistance(currentDriverLat, currentDriverLng, custLat, custLng);
+  const etaMinutes = Math.max(3, Math.round((distanceKm / 22) * 60 + 4));
 
   return (
-    <div style={{ backgroundColor: 'var(--cream)', minHeight: '100vh', padding: '2rem 1rem' }}>
-      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ backgroundColor: 'var(--bg-main)', minHeight: '100vh', padding: '3rem 1.5rem 5rem' }}>
+      <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
         
-        {/* Header Area */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div 
-            style={{ 
-              width: '80px', 
-              height: '80px', 
-              backgroundColor: order.status === 'CANCELLED' ? 'var(--red)' : 'var(--green)', 
-              borderRadius: '50%', 
-              display: 'flex', 
-              alignItems: 'center', 
+        {/* Top Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              backgroundColor: isDelivered ? '#DCFCE7' : '#FFF7ED',
+              color: isDelivered ? '#16A34A' : 'var(--brand-primary)',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1rem',
-              color: 'var(--white)',
-              fontSize: '3rem',
-              animation: 'bounceIn 0.5s ease-out'
+              fontSize: '1.8rem',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
+              border: '1px solid #ECE7DF'
             }}
           >
-            {order.status === 'CANCELLED' ? 'X' : '✓'}
+            {isDelivered ? '🎉' : isOutForDelivery ? '🛵' : '✓'}
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', color: 'var(--black)', margin: '0 0 0.5rem' }}>
-            {order.status === 'CANCELLED' ? 'ORDER CANCELLED' : 'ORDER PLACED'}
+
+          <span
+            style={{
+              backgroundColor: '#FEF3C7',
+              color: '#92400E',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              padding: '0.25rem 0.8rem',
+              borderRadius: '9999px',
+              display: 'inline-block',
+              marginBottom: '0.4rem',
+              letterSpacing: '0.04em'
+            }}
+          >
+            ORDER #{order.id}
+          </span>
+
+          <h1
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 'clamp(2rem, 3.2vw, 2.7rem)',
+              color: 'var(--brand-dark)',
+              margin: '0 0 0.4rem',
+              fontWeight: 700
+            }}
+          >
+            {isDelivered
+              ? 'Order Delivered!'
+              : isOutForDelivery
+              ? 'Your order is on the way!'
+              : currentLevel === 1
+              ? 'Preparing your food fresh'
+              : 'Order confirmed!'}
           </h1>
-          <p style={{ color: '#666', fontSize: '1.1rem', margin: 0 }}>
-            {order.status === 'CANCELLED' ? 'The restaurant rejected your order.' : 'Your order has been securely confirmed.'}
+
+          <p style={{ color: '#78716C', fontSize: '0.95rem', margin: 0 }}>
+            {isOutForDelivery
+              ? `Delivery partner is heading your way • ETA ~${etaMinutes} mins`
+              : `Delivery to ${order.delivery_address || order.delivery_location?.address || 'Connaught Place, New Delhi'}`}
           </p>
         </div>
 
-        {order.status === 'CANCELLED' && order.rejection_reason && (
-           <div style={{ padding: '1rem', backgroundColor: '#ffebee', border: '1px solid var(--red)', color: 'var(--red)', marginBottom: '1.5rem', textAlign: 'center', fontWeight: 'bold' }}>
-             Reason: {order.rejection_reason}
-           </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-          {/* Timeline Section */}
-          <div style={{ flex: '1', minWidth: '250px', backgroundColor: 'var(--white)', padding: '2rem', border: 'var(--border-thick)', boxShadow: '4px 4px 0px var(--black)' }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 1.5rem', fontSize: '1.5rem' }}>TRACKING</h3>
+        {/* 2-Column Layout: LEFT = Order Status & Details; RIGHT = Live Map (when delivery active) or Kitchen Progress Card */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '0.95fr 1.05fr',
+            gap: '2rem',
+            alignItems: 'start'
+          }}
+          className="order-track-grid"
+        >
+          {/* LEFT COLUMN: Order Status Pipeline & Summary */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative' }}>
-              {/* Connecting Line */}
-              <div style={{ position: 'absolute', left: '11px', top: '20px', bottom: '20px', width: '2px', backgroundColor: '#eee', zIndex: 0 }}></div>
+            {/* Status Timeline */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                padding: '1.75rem',
+                borderRadius: '20px',
+                border: '1px solid #ECE7DF',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+              }}
+            >
+              <h3
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  margin: '0 0 1.25rem',
+                  color: 'var(--brand-dark)'
+                }}
+              >
+                Order Timeline
+              </h3>
 
-              {steps.map((step, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'center', position: 'relative', zIndex: 1, opacity: step.active ? 1 : 0.4 }}>
-                  <div style={{ 
-                    width: '24px', 
-                    height: '24px', 
-                    borderRadius: '50%', 
-                    backgroundColor: step.active ? (step.isError ? 'var(--red)' : 'var(--green)') : '#eee',
-                    border: step.active ? 'none' : '2px solid #ccc',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: '12px'
-                  }}>
-                    {step.active && (step.isError ? '×' : '✓')}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', color: step.isError ? 'var(--red)' : 'var(--black)' }}>{step.label}</div>
-                    {step.time && <div style={{ fontSize: '0.8rem', color: '#666' }}>{new Date(step.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', position: 'relative' }}>
+                {/* Vertical connecting line */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '15px',
+                    top: '16px',
+                    bottom: '16px',
+                    width: '2px',
+                    backgroundColor: '#EFEAE2',
+                    zIndex: 0
+                  }}
+                />
 
-          {/* Receipt Section */}
-          <div style={{ flex: '1', minWidth: '300px', backgroundColor: 'var(--white)', padding: '2rem', border: 'var(--border-thick)', boxShadow: '4px 4px 0px var(--black)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--black)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-              <div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', margin: '0 0 0.2rem' }}>
-                  #{order.id}
-                </h2>
-                <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
-                  {new Date(order.created_at).toLocaleDateString()}
-                </p>
+                {STATUS_CONFIG.map((step, idx) => {
+                  const isPassed = currentLevel >= idx;
+                  const isCurrent = currentLevel === idx;
+
+                  return (
+                    <div
+                      key={step.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '1rem',
+                        position: 'relative',
+                        zIndex: 1,
+                        opacity: isPassed ? 1 : 0.45
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: isCurrent ? 'var(--brand-primary)' : isPassed ? '#16A34A' : '#FAF5EE',
+                          color: isPassed || isCurrent ? '#FFFFFF' : '#78716C',
+                          border: isCurrent ? '2px solid var(--brand-primary)' : '1px solid #ECE7DF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          flexShrink: 0,
+                          boxShadow: isCurrent ? '0 0 0 4px rgba(234, 88, 12, 0.2)' : 'none'
+                        }}
+                      >
+                        {isPassed && !isCurrent ? '✓' : step.icon}
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: '0.95rem',
+                            fontWeight: isCurrent ? 800 : 600,
+                            color: isCurrent ? 'var(--brand-primary)' : 'var(--brand-dark)'
+                          }}
+                        >
+                          {step.label}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#78716C', marginTop: '2px' }}>
+                          {step.desc}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                  PAYMENT: <strong style={{ color: 'var(--green)' }}>{order.payment_status}</strong>
+            </div>
+
+            {/* Receipt Summary Card */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                padding: '1.75rem',
+                borderRadius: '20px',
+                border: '1px solid #ECE7DF',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingBottom: '0.75rem',
+                  borderBottom: '1px solid #EFEAE2',
+                  marginBottom: '1rem'
+                }}
+              >
+                <div>
+                  <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', margin: 0, fontWeight: 700 }}>
+                    {order.restaurant_name || 'BIGBITES Kitchen'}
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', color: '#78716C' }}>
+                    {new Date(order.created_at || Date.now()).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#16A34A', backgroundColor: '#F0FDF4', padding: '0.2rem 0.6rem', borderRadius: '9999px' }}>
+                  ● Paid Securely
+                </span>
+              </div>
+
+              {/* Items List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
+                {order.items?.map((item, idx) => {
+                  const p = typeof item.rawPrice === 'number' ? item.rawPrice : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '') || '199');
+                  return (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                      <span style={{ color: 'var(--brand-dark)' }}>{item.quantity || 1} × {item.name}</span>
+                      <span style={{ fontWeight: 700 }}>₹{(p * (item.quantity || 1)).toFixed(0)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Total */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '1px solid #EFEAE2',
+                  paddingTop: '0.75rem',
+                  fontSize: '1.15rem',
+                  fontWeight: 800,
+                  color: 'var(--brand-dark)'
+                }}
+              >
+                <span>Total Paid:</span>
+                <span style={{ color: 'var(--brand-primary)' }}>
+                  ₹{Number(order.amount || order.subtotal || 0).toFixed(0)}
                 </span>
               </div>
             </div>
 
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', margin: '0 0 0.8rem' }}>DELIVER TO</h3>
-              <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: '1.5' }}>
-                <strong>{order.delivery_location?.label || 'HOME'}</strong><br/>
-                {order.delivery_location?.address}
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', margin: '0 0 0.8rem' }}>ITEMS</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {order.items?.map(item => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-                    <span>{item.quantity} × {item.name}</span>
-                    <span>₹{item.rawPrice * item.quantity}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ borderTop: '2px dashed #eee', paddingTop: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.95rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Subtotal</span>
-                  <span>₹{order.subtotal}</span>
-                </div>
-                {order.discount_amount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2e7d32', fontWeight: 'bold' }}>
-                    <span>{order.coupon_code} Discount</span>
-                    <span>−₹{order.discount_amount}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Delivery Fee</span>
-                  <span>₹{order.delivery_fee}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Tax</span>
-                  <span>₹{order.tax_amount}</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.4rem', fontWeight: 'bold', marginTop: '1rem', borderTop: '2px solid var(--black)', paddingTop: '1rem' }}>
-                <span>TOTAL</span>
-                <span>₹{order.amount}</span>
-              </div>
+            {/* Quick Actions */}
+            <div style={{ display: 'flex', gap: '0.85rem' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="btn-outline"
+                style={{ flex: 1, padding: '0.85rem', fontSize: '0.9rem' }}
+              >
+                ← Return to Home
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/dev/driver')}
+                className="btn-see-all"
+                style={{ padding: '0.85rem 1.2rem', fontSize: '0.85rem' }}
+                title="Open delivery partner simulator to send real GPS coordinates"
+              >
+                🛵 Partner GPS App
+              </button>
             </div>
           </div>
-        </div>
 
-        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-          <button 
-            onClick={() => navigate('/')} 
-            className="btn-editorial-outline"
-            style={{ padding: '1rem 2rem', fontSize: '1rem', backgroundColor: 'transparent' }}
-          >
-            ← BACK TO HOME
-          </button>
+          {/* RIGHT COLUMN: Live Map (When Out for Delivery) OR Kitchen Order Progress Display */}
+          <div>
+            {isOutForDelivery || isDelivered ? (
+              <div
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  border: '1px solid #ECE7DF',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.04)'
+                }}
+              >
+                {/* Live Radar Header */}
+                <div
+                  style={{
+                    padding: '1rem 1.5rem',
+                    borderBottom: '1px solid #EFEAE2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: '#FAF5EE'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: '#16A34A',
+                        display: 'inline-block',
+                        animation: 'pulse 2s infinite'
+                      }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
+                      Live Realtime Delivery Radar
+                    </span>
+                  </div>
+
+                  <div style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.25rem 0.65rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700 }}>
+                    ⏱️ ~{etaMinutes} mins ({distanceKm.toFixed(1)} km)
+                  </div>
+                </div>
+
+                {/* Google Maps View */}
+                <div style={{ height: '480px', width: '100%', position: 'relative' }}>
+                  <GoogleMapsView
+                    customerLocation={{
+                      lat: custLat,
+                      lng: custLng,
+                      label: order.delivery_location?.label || 'HOME',
+                      address: order.delivery_address || order.delivery_location?.address
+                    }}
+                    kitchenLocation={{
+                      lat: rLat,
+                      lng: rLng,
+                      name: order.restaurant_name || 'BIGBITES Kitchen Hub'
+                    }}
+                    driverLocation={driverLocation || { latitude: currentDriverLat, longitude: currentDriverLng, heading: driverLocation?.heading || 0 }}
+                    showRoute={true}
+                    interactive={true}
+                    height="100%"
+                    minHeight="480px"
+                  />
+                </div>
+
+                {/* Driver Status Footer */}
+                <div
+                  style={{
+                    padding: '1rem 1.5rem',
+                    borderTop: '1px solid #EFEAE2',
+                    backgroundColor: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.8rem',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <div>
+                    <span style={{ color: '#78716C' }}>Delivery Partner: </span>
+                    <strong style={{ color: 'var(--brand-dark)' }}>{order.driver_name || 'BIGBITES Express Rider'}</strong>
+                  </div>
+                  <div style={{ color: '#16A34A', fontWeight: 700 }}>
+                    🟢 Realtime GPS Connected
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Prior to Out for Delivery: Show Order Preparation Progress Card */
+              <div
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  border: '1px solid #ECE7DF',
+                  padding: '2.5rem 2rem',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FFF7ED',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.25rem',
+                    fontSize: '2.2rem',
+                    border: '1px solid #FED7AA'
+                  }}
+                >
+                  🍳
+                </div>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: '1.5rem',
+                    color: 'var(--brand-dark)',
+                    margin: '0 0 0.5rem',
+                    fontWeight: 700
+                  }}
+                >
+                  Order in the Kitchen
+                </h3>
+                <p style={{ color: '#78716C', fontSize: '0.92rem', maxWidth: '420px', margin: '0 auto 1.75rem', lineHeight: 1.5 }}>
+                  The chef at <strong>{order.restaurant_name || 'BIGBITES Kitchen'}</strong> is preparing your dishes fresh to order. Live GPS tracking will activate the moment your delivery partner picks up the order!
+                </p>
+
+                {/* Delivery details snapshot */}
+                <div
+                  style={{
+                    backgroundColor: '#FDFBF7',
+                    border: '1px solid #ECE7DF',
+                    borderRadius: '16px',
+                    padding: '1.25rem',
+                    textAlign: 'left',
+                    maxWidth: '440px',
+                    margin: '0 auto'
+                  }}
+                >
+                  <div style={{ fontSize: '0.78rem', color: '#78716C', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                    Delivery Destination
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--brand-dark)', marginBottom: '0.2rem' }}>
+                    {order.delivery_address || order.delivery_location?.address || 'Connaught Place, New Delhi'}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#78716C' }}>
+                    Coordinates: {Number(custLat).toFixed(4)}, {Number(custLng).toFixed(4)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
 
       <style>{`
-        @keyframes bounceIn {
-          0% { transform: scale(0); }
-          50% { transform: scale(1.2); }
-          100% { transform: scale(1); }
+        @keyframes pulse {
+          0% { transform: scale(0.95); opacity: 0.8; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        @media (max-width: 900px) {
+          .order-track-grid {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
     </div>

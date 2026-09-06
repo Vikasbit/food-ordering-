@@ -1,290 +1,258 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 export default function Hero({ onOpenCart, onOpenOrderTracking }) {
   return (
     <section
       id="hero"
       style={{
+        paddingTop: '6.5rem',
+        paddingBottom: '3.5rem',
+        backgroundColor: 'var(--bg-main)',
         position: 'relative',
-        minHeight: '100vh',
-        backgroundColor: 'var(--cream)',
-        paddingTop: '7.5rem',
-        paddingBottom: '4rem',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
+        overflow: 'hidden'
       }}
     >
-      <div className="container-editorial" style={{ width: '100%', position: 'relative', zIndex: 2 }}>
-        
-        {/* Top Zomato/Swiggy-Style Serving Kitchen & Delivery Status Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: -15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.8rem',
-            marginBottom: '2rem',
-            flexWrap: 'wrap'
-          }}
-        >
-          {/* Matched Serving Kitchen Hub Badge */}
+      <div
+        className="container-clean"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1.05fr 0.95fr',
+          alignItems: 'center',
+          gap: '3rem',
+          minHeight: '480px'
+        }}
+      >
+        {/* LEFT COLUMN: Editorial Headline & Social Proof */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', zIndex: 2 }}>
+          
+          {/* Tag / Pill */}
+          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                backgroundColor: '#FEF3C7',
+                border: '1px solid #FDE68A',
+                color: '#92400E',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                padding: '0.35rem 0.9rem',
+                borderRadius: '9999px'
+              }}
+            >
+              <span style={{ fontSize: '0.85rem' }}>✨</span>
+              <span>Delivering happiness daily</span>
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h1
+            style={{
+              fontSize: 'clamp(2.8rem, 5.2vw, 4.2rem)',
+              lineHeight: 1.08,
+              fontFamily: 'var(--font-serif)',
+              color: 'var(--brand-dark)',
+              fontWeight: 700,
+              letterSpacing: '-0.025em'
+            }}
+          >
+            Cravings,
+            <br />
+            <span
+              style={{
+                fontStyle: 'italic',
+                fontFamily: 'var(--font-serif)',
+                color: 'var(--brand-primary)',
+                fontWeight: 600
+              }}
+            >
+              delivered fast.
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p
+            style={{
+              fontSize: '1.1rem',
+              color: '#57534E',
+              lineHeight: 1.6,
+              maxWidth: '480px',
+              fontWeight: 400
+            }}
+          >
+            Discover great restaurants, order your favourites, and track every delivery from one place.
+          </p>
+
+          {/* Action CTAs */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.6rem',
-              backgroundColor: 'var(--white)',
-              border: 'var(--border-thick)',
-              padding: '0.55rem 1rem',
-              boxShadow: '3px 3px 0px var(--black)'
+              gap: '1rem',
+              marginTop: '0.5rem',
+              flexWrap: 'wrap'
             }}
           >
-            <span style={{ fontSize: '1.1rem' }}>🍳</span>
-            <div>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--red)', display: 'block', textTransform: 'uppercase' }}>
-                SERVED BY CLOUD HUB
-              </span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', color: 'var(--black)' }}>
-                EATnaked Flagship Kitchen • 4.9 ★
-              </span>
+            <a
+              href="#restaurants"
+              className="btn-primary"
+              style={{
+                padding: '0.85rem 2.2rem',
+                fontSize: '1rem',
+                fontWeight: 600
+              }}
+            >
+              Order Now
+            </a>
+
+            <a
+              href="#restaurants"
+              className="btn-outline"
+              style={{
+                padding: '0.85rem 2rem',
+                fontSize: '1rem',
+                fontWeight: 600
+              }}
+            >
+              Explore Restaurants
+            </a>
+          </div>
+
+          {/* Real Platform Highlights (No fake stats) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1.5rem',
+              marginTop: '1.25rem',
+              paddingTop: '1.25rem',
+              borderTop: '1px solid #EFEAE2',
+              flexWrap: 'wrap'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.1rem' }}>📍</span>
+              <span style={{ fontSize: '0.85rem', color: '#57534E', fontWeight: 600 }}>Local Area Delivery</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.1rem' }}>⚡</span>
+              <span style={{ fontSize: '0.85rem', color: '#57534E', fontWeight: 600 }}>Real-Time Tracking</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.1rem' }}>🛡️</span>
+              <span style={{ fontSize: '0.85rem', color: '#57534E', fontWeight: 600 }}>Secure Online Pay</span>
             </div>
           </div>
-
-          {/* Live Order Tracking Button */}
-          <button
-            onClick={onOpenOrderTracking}
-            style={{
-              backgroundColor: 'var(--green)',
-              color: 'var(--white)',
-              border: 'var(--border-thick)',
-              padding: '0.6rem 1rem',
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              boxShadow: '3px 3px 0px var(--black)'
-            }}
-          >
-            <span>🛵 LIVE TRACKING</span>
-            <span>•</span>
-            <span>24 MIN ETA</span>
-          </button>
-
-          {/* Promo Code Badge */}
-          <div
-            style={{
-              backgroundColor: 'var(--red)',
-              color: 'var(--white)',
-              border: 'var(--border-thick)',
-              padding: '0.65rem 1rem',
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.85rem',
-              boxShadow: '3px 3px 0px var(--black)'
-            }}
-          >
-            🎉 CODE: EAT50 (50% OFF)
-          </div>
-        </motion.div>
-
-        {/* GIANT EDITORIAL HEADLINE */}
-        <div style={{ position: 'relative' }}>
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.8rem, 9.5vw, 9.5rem)',
-              color: 'var(--red)',
-              lineHeight: 0.9,
-              textTransform: 'uppercase',
-              wordBreak: 'break-word',
-              letterSpacing: '-0.03em',
-              margin: 0
-            }}
-          >
-            EAT LOCAL,<br />
-            EAT INDIAN,<br />
-            EAT NAKED.
-          </motion.h1>
-
-          {/* Floating Badge */}
-          <motion.div
-            className="animate-spin-slow"
-            style={{
-              position: 'absolute',
-              top: '5%',
-              right: '8%',
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--black)',
-              color: 'var(--cream)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.65rem',
-              textAlign: 'center',
-              padding: '0.5rem',
-              border: 'var(--border-thick)'
-            }}
-          >
-            ★ 100% HOMEMADE ★ NO PRESERVATIVES ★
-          </motion.div>
         </div>
 
-        {/* Hero Content & Food Photography Layout */}
+        {/* RIGHT COLUMN: Cheerful Delivery Rider on Yellow Vespa */}
         <div
           style={{
-            marginTop: '3rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(12, 1fr)',
-            gap: '2rem',
-            alignItems: 'end'
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}
         >
-          {/* Left Column: Description & Delivery Action */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            style={{ gridColumn: 'span 6' }}
-            className="hero-left-col"
-          >
-            <p
-              style={{
-                fontSize: '1.35rem',
-                fontWeight: 600,
-                maxWidth: '480px',
-                marginBottom: '2rem',
-                color: 'var(--black)'
-              }}
-            >
-              Authentic Indian regional home recipes, crafted fresh with bold spices and uncompromised attitude. Delivered hot to your doorstep in under 30 minutes.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <a href="#menu" className="btn-editorial" data-cursor="ORDER">
-                ORDER NOW →
-              </a>
-              <button
-                onClick={onOpenCart}
-                className="btn-editorial-outline"
-                data-cursor="CART"
-              >
-                VIEW CART 🛍️
-              </button>
-            </div>
-          </motion.div>
+          {/* Subtle Ambient Background Halo */}
+          <div
+            style={{
+              position: 'absolute',
+              width: '420px',
+              height: '420px',
+              borderRadius: '50%',
+              backgroundColor: '#FEF08A',
+              opacity: 0.35,
+              filter: 'blur(70px)',
+              zIndex: 1
+            }}
+          />
 
-          {/* Right Column: Editorial Food Cutout Panel */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            style={{ gridColumn: 'span 6', position: 'relative' }}
-            className="hero-right-col"
+          {/* Delivery Rider Graphic */}
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              width: '100%',
+              maxWidth: '520px',
+              animation: 'floatSlow 4s ease-in-out infinite'
+            }}
           >
-            <div
+            <img
+              src="/assets/hero_scooter_rider.jpg"
+              alt="BIGBITES Express Food Delivery"
               style={{
-                border: 'var(--border-thick)',
-                backgroundColor: 'var(--green)',
-                padding: '1rem',
-                boxShadow: '12px 12px 0px var(--black)',
-                position: 'relative'
+                width: '100%',
+                height: 'auto',
+                borderRadius: '28px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.08))'
               }}
-            >
-              <img
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzs6zoNqsUCjEvKYe-Cu1wqNcCeDqESA16SBy5EGm1nQhmpdj8N06053aK&s=10"
-                alt="EATnaked Indian Chicken Curry"
-                style={{
-                  width: '100%',
-                  height: '380px',
-                  objectFit: 'cover',
-                  display: 'block',
-                  border: 'var(--border-thick)'
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '-15px',
-                  left: '20px',
-                  backgroundColor: 'var(--yellow)',
-                  color: 'var(--black)',
-                  padding: '0.4rem 1rem',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.9rem',
-                  border: 'var(--border-thick)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}
-              >
-                <span>⭐ 4.9 (1.2k+)</span>
-                <span>•</span>
-                <span>INDIAN CHICKEN CURRY</span>
-              </div>
-            </div>
+            />
 
-            {/* Playful Floating Badge */}
+            {/* Floating Live Badge: 28 min delivery */}
             <div
-              className="animate-float"
               style={{
                 position: 'absolute',
-                top: '-30px',
-                left: '-30px',
-                backgroundColor: 'var(--red)',
-                color: 'var(--white)',
-                padding: '0.8rem 1.2rem',
-                border: 'var(--border-thick)',
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.2rem',
-                transform: 'rotate(-8deg)'
+                bottom: '18px',
+                left: '-12px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '9999px',
+                padding: '0.6rem 1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                boxShadow: '0 8px 24px rgba(28,25,23,0.1)',
+                border: '1px solid #ECE7DF',
+                animation: 'floatSlow 5s ease-in-out infinite reverse'
               }}
             >
-              🔥 TOP RATED!
+              <span
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFF7ED',
+                  color: 'var(--brand-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  fontWeight: 700
+                }}
+              >
+                ⚡
+              </span>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
+                  Lightning Fast
+                </p>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: '#78716C' }}>
+                  Avg. 25-30 mins
+                </p>
+              </div>
             </div>
-          </motion.div>
-
-        </div>
-      </div>
-
-      {/* Ticker Marquee Banner */}
-      <div className="marquee-container" style={{ marginTop: '4rem' }}>
-        <div className="marquee-content">
-          <span className="marquee-item">⚡ 30 MIN EXPRESS DELIVERY</span> ★
-          <span className="marquee-item">⭐ 4.9 STAR RATED MEALS</span> ★
-          <span className="marquee-item">🌱 100% ORGANIC SPICES</span> ★
-          <span className="marquee-item">📦 ZERO WASTE PACKAGING</span> ★
-          <span className="marquee-item">⚡ 30 MIN EXPRESS DELIVERY</span> ★
-          <span className="marquee-item">⭐ 4.9 STAR RATED MEALS</span> ★
+          </div>
         </div>
       </div>
 
       <style>{`
-        @media (max-width: 900px) {
-          .hero-left-col, .hero-right-col {
-            grid-column: span 12 !important;
-          }
+        @keyframes floatSlow {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
         }
-        @media (max-width: 640px) {
-          #hero {
-            padding-top: 6rem !important;
-            padding-bottom: 2.5rem !important;
+        @media (max-width: 960px) {
+          #hero .container-clean {
+            grid-template-columns: 1fr !important;
+            gap: 2.5rem !important;
+            text-align: center;
           }
-          .hero-right-col img {
-            height: 260px !important;
+          #hero div[style*="flexDirection: 'column'"] {
+            align-items: center;
           }
-          .hero-left-col p {
-            font-size: 1.1rem !important;
-            margin-bottom: 1.5rem !important;
+          #hero div[style*="display: 'flex'"][style*="gap: '1rem'"] {
+            justify-content: center;
           }
         }
       `}</style>

@@ -268,7 +268,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                   <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
                     <div style={{ border: '4px solid var(--black)', padding: '0.5rem', backgroundColor: 'var(--white)', boxShadow: '3px 3px 0px var(--black)' }}>
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=eatnaked@upi&pn=EATnakedKitchen&am=${grandTotal}&cu=INR`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=bigbites@upi&pn=BigBitesKitchen&am=${grandTotal}&cu=INR`}
                         alt="UPI QR Code"
                         style={{ width: '140px', height: '140px', objectFit: 'contain' }}
                       />
@@ -277,7 +277,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                       SCAN WITH ANY UPI APP (GPAY, PHONEPE, PAYTM, CRED)
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                      Amount: <strong style={{ color: 'var(--red)' }}>₹{grandTotal}</strong> • Merchant: EATnaked Kitchen
+                      Amount: <strong style={{ color: 'var(--red)' }}>₹{grandTotal}</strong> • Merchant: BigBites Kitchen
                     </div>
                   </div>
                 )}

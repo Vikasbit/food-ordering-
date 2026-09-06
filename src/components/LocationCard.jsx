@@ -54,7 +54,7 @@ export default function LocationCard({ location, onClose }) {
           marginBottom: '0.25rem'
         }}
       >
-        EATnaked Restaurant
+        BigBites Restaurant
       </div>
 
       <h3

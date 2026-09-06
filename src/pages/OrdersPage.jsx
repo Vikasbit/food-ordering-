@@ -16,7 +16,7 @@ export default function OrdersPage() {
     
     // In a real app we'd fetch this from the backend
     // Since we're using mock local storage for the DB:
-    const allOrders = JSON.parse(localStorage.getItem('eatnaked_db_orders') || '[]');
+    const allOrders = JSON.parse(localStorage.getItem('bigbites_db_orders') || '[]');
     // Filter to authenticated user and filter out ones that didn't complete payment
     const myOrders = allOrders
       .filter(o => o.customer_id === user.id && o.payment_status === 'CAPTURED')
@@ -40,7 +40,7 @@ export default function OrdersPage() {
           <div style={{ backgroundColor: 'var(--white)', padding: '4rem 2rem', textAlign: 'center', border: 'var(--border-thick)' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🛒</div>
             <h2 style={{ fontFamily: 'var(--font-display)', margin: '0 0 1rem' }}>NO ORDERS YET</h2>
-            <p style={{ color: '#666', marginBottom: '2rem' }}>You haven't placed any orders with EATnaked yet.</p>
+            <p style={{ color: '#666', marginBottom: '2rem' }}>You haven't placed any orders with BigBites yet.</p>
             <button 
               onClick={() => navigate('/')} 
               className="btn-editorial"

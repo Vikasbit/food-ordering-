@@ -66,7 +66,7 @@ export default function SellerDashboardPage() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', color: 'var(--red)', margin: '0 0 0.5rem' }}>
             DASHBOARD
           </h1>
-          <p style={{ margin: 0, opacity: 0.8 }}>Welcome back to EATnaked Partner.</p>
+          <p style={{ margin: 0, opacity: 0.8 }}>Welcome back to BigBites Partner.</p>
         </div>
         <div>
           <span style={{ 

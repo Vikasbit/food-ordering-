@@ -1,6 +1,6 @@
 # Phase 2: Seller & Restaurant Management
 
-This plan outlines the steps to build out the fully functional Seller Partner system for EATnaked using React Router, Supabase Auth, PostgreSQL, and Supabase Storage.
+This plan outlines the steps to build out the fully functional Seller Partner system for BigBites using React Router, Supabase Auth, PostgreSQL, and Supabase Storage.
 
 ## User Review Required
 > [!IMPORTANT]

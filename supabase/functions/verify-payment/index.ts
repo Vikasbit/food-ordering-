@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { razorpayPaymentId, razorpayOrderId, razorpaySignature, eatnakedOrderId, deliveryLocation, cartItems } = await req.json()
+    const { razorpayPaymentId, razorpayOrderId, razorpaySignature, bigbitesOrderId, deliveryLocation, cartItems } = await req.json()
 
     const razorpaySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
     if (!razorpaySecret) throw new Error('Razorpay configuration missing')
@@ -37,7 +37,7 @@ serve(async (req) => {
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        id: eatnakedOrderId,
+        id: bigbitesOrderId,
         status: 'PENDING',
         payment_status: 'CAPTURED',
         delivery_location: deliveryLocation,
@@ -52,7 +52,7 @@ serve(async (req) => {
     await supabaseAdmin
       .from('payments')
       .insert({
-        order_id: eatnakedOrderId,
+        order_id: bigbitesOrderId,
         provider: 'razorpay',
         provider_order_id: razorpayOrderId,
         provider_payment_id: razorpayPaymentId,
@@ -60,7 +60,7 @@ serve(async (req) => {
       })
 
     return new Response(
-      JSON.stringify({ success: true, orderId: eatnakedOrderId }),
+      JSON.stringify({ success: true, orderId: bigbitesOrderId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

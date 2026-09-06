@@ -1,7 +1,7 @@
 export const LOCATIONS = [
   {
     id: "paris",
-    name: "EATnaked Paris",
+    name: "BigBites Paris",
     city: "Paris",
     country: "France",
     lat: 48.8566,
@@ -12,7 +12,7 @@ export const LOCATIONS = [
   },
   {
     id: "mumbai",
-    name: "EATnaked Mumbai",
+    name: "BigBites Mumbai",
     city: "Mumbai",
     country: "India",
     lat: 19.0760,
@@ -23,7 +23,7 @@ export const LOCATIONS = [
   },
   {
     id: "delhi",
-    name: "EATnaked Delhi",
+    name: "BigBites Delhi",
     city: "Delhi",
     country: "India",
     lat: 28.6139,
