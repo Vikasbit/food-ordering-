@@ -43,7 +43,15 @@ export default function RazorpayButton({ order, onSuccess, onError }) {
     };
 
     const rzp = new window.Razorpay(options);
+    // Open the Razorpay checkout modal
     rzp.open();
+    // Listen for payment failures and propagate detailed error
+    rzp.on('payment.failed', function (response) {
+      // response contains error details from Razorpay
+      const errorMsg = `Payment failed: ${response.error?.description || response.error?.reason || 'Unknown error'}`;
+      // Pass a structured error object to onError for better diagnostics
+      onError && onError(new Error(errorMsg + ' | Details: ' + JSON.stringify(response)));
+    });
   };
 
   return (

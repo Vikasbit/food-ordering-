@@ -109,8 +109,9 @@ export default function CheckoutPage() {
       setRazorpayOrder(orderResponse);
       setLoadingMessage('Ready for payment');
     } catch (err) {
-      console.error(err);
-      alert(err.message || 'An error occurred during checkout.');
+      // Log full error for debugging and show detailed message to user
+      console.error('Checkout error:', err);
+      alert(`Checkout failed: ${err.message || 'Unexpected error'}`);
     } finally {
       setLoading(false);
     }
