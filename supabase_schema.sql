@@ -1,6 +1,6 @@
 -- ========================================================
--- BIGBITES COMPREHENSIVE SUPABASE DATABASE MIGRATION
--- Production Schema, Foreign Keys, Triggers, RLS & Seed Data
+-- BIGBITES PRODUCTION SUPABASE DATABASE MIGRATION
+-- Complete Schema, Foreign Keys, Functions, RLS & Seed Data
 -- ========================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -180,10 +180,38 @@ CREATE INDEX IF NOT EXISTS idx_payments_order_id ON public.payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_driver_locations_order ON public.driver_locations(order_id);
 
 -- ========================================================
--- AUTOMATION TRIGGERS & FUNCTIONS
+-- SECURITY & AUTOMATION FUNCTIONS / TRIGGERS
 -- ========================================================
 
--- 1. Sync user_id and customer_id on orders
+-- 1. Helper function: check if authenticated user is admin without recursion
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+-- 2. Prevent role self-escalation trigger on profiles
+-- Even if an attacker crafts an UPDATE request with role='admin', this trigger rejects it.
+CREATE OR REPLACE FUNCTION public.prevent_self_role_escalation()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role THEN
+    IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+      RAISE EXCEPTION 'Unauthorized: Users cannot change their own role';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_prevent_self_role_escalation ON public.profiles;
+CREATE TRIGGER trg_prevent_self_role_escalation
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_self_role_escalation();
+
+-- 3. Sync user_id and customer_id on orders
 CREATE OR REPLACE FUNCTION public.sync_order_user_ids()
 RETURNS trigger AS $$
 BEGIN
@@ -201,7 +229,10 @@ CREATE TRIGGER trg_sync_order_user_ids
   BEFORE INSERT OR UPDATE ON public.orders
   FOR EACH ROW EXECUTE FUNCTION public.sync_order_user_ids();
 
--- 2. Auto-provision profile on auth.users signup
+-- 4. Authoritative profile creation on auth.users signup
+-- CRITICAL SECURITY FIX: ALWAYS forces role = 'customer'.
+-- Never trusts client-supplied metadata for role assignment.
+-- ON CONFLICT preserves existing role if user already has an elevated role.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
@@ -210,12 +241,11 @@ BEGIN
     new.id,
     new.email,
     COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    COALESCE(new.raw_user_meta_data->>'role', 'customer')
+    'customer'
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
     full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
-    role = COALESCE(EXCLUDED.role, public.profiles.role),
     updated_at = NOW();
   RETURN new;
 END;
@@ -239,112 +269,214 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.driver_locations ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
+-- --------------------------------------------------------
+-- PROFILES RLS (Strict Privacy: No Public Exposure of Emails/Phones)
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Public profiles can be read" ON public.profiles;
-CREATE POLICY "Public profiles can be read" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+CREATE POLICY "Users can view own profile" ON public.profiles
+  FOR SELECT USING (
+    -- Customer views own profile
+    auth.uid() = id
+    -- Admins can view profiles
+    OR public.is_admin()
+    -- Restaurant sellers can view customer info for orders placed at their restaurant
+    OR EXISTS (
+      SELECT 1 FROM public.orders o
+      JOIN public.restaurants r ON r.id = o.restaurant_id
+      WHERE (o.user_id = profiles.id OR o.customer_id = profiles.id)
+        AND r.seller_id = auth.uid()
+    )
+    -- Drivers can view recipient info for their assigned deliveries
+    OR EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE (o.user_id = profiles.id OR o.customer_id = profiles.id)
+        AND o.driver_id = auth.uid()
+    )
+    -- Customers can view assigned driver info for their active order
+    OR EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE profiles.id = o.driver_id
+        AND (o.user_id = auth.uid() OR o.customer_id = auth.uid())
+    )
+  );
 
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id AND role = 'customer');
 
 DROP POLICY IF EXISTS "Users can edit own profile" ON public.profiles;
-CREATE POLICY "Users can edit own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can edit own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id OR public.is_admin());
 
--- Restaurants Policies
+-- --------------------------------------------------------
+-- RESTAURANTS RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Anyone can view active restaurants" ON public.restaurants;
-CREATE POLICY "Anyone can view active restaurants" ON public.restaurants FOR SELECT
-  USING (status ILIKE 'active' OR auth.uid() = seller_id);
+CREATE POLICY "Anyone can view active restaurants" ON public.restaurants
+  FOR SELECT USING (status ILIKE 'active' OR auth.uid() = seller_id OR public.is_admin());
 
 DROP POLICY IF EXISTS "Sellers can create restaurants" ON public.restaurants;
-CREATE POLICY "Sellers can create restaurants" ON public.restaurants FOR INSERT
-  WITH CHECK (auth.uid() = seller_id);
+CREATE POLICY "Sellers can create restaurants" ON public.restaurants
+  FOR INSERT WITH CHECK (
+    (auth.uid() = seller_id AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('seller', 'admin'))
+    OR public.is_admin()
+  );
 
 DROP POLICY IF EXISTS "Sellers can update own restaurant" ON public.restaurants;
-CREATE POLICY "Sellers can update own restaurant" ON public.restaurants FOR UPDATE
-  USING (auth.uid() = seller_id);
+CREATE POLICY "Sellers can update own restaurant" ON public.restaurants
+  FOR UPDATE USING (
+    (auth.uid() = seller_id AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('seller', 'admin'))
+    OR public.is_admin()
+  );
 
--- Menu Categories Policies
+-- --------------------------------------------------------
+-- MENU CATEGORIES RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Anyone can view menu categories" ON public.menu_categories;
-CREATE POLICY "Anyone can view menu categories" ON public.menu_categories FOR SELECT USING (true);
+CREATE POLICY "Anyone can view menu categories" ON public.menu_categories
+  FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Sellers can manage categories" ON public.menu_categories;
-CREATE POLICY "Sellers can manage categories" ON public.menu_categories FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = menu_categories.restaurant_id AND r.seller_id = auth.uid()));
+CREATE POLICY "Sellers can manage categories" ON public.menu_categories
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.restaurants r
+      WHERE r.id = menu_categories.restaurant_id
+        AND (r.seller_id = auth.uid() OR public.is_admin())
+    )
+  );
 
--- Menu Items Policies
+-- --------------------------------------------------------
+-- MENU ITEMS RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Anyone can view menu items" ON public.menu_items;
-CREATE POLICY "Anyone can view menu items" ON public.menu_items FOR SELECT USING (true);
+CREATE POLICY "Anyone can view menu items" ON public.menu_items
+  FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Sellers can manage menu items" ON public.menu_items;
-CREATE POLICY "Sellers can manage menu items" ON public.menu_items FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = menu_items.restaurant_id AND r.seller_id = auth.uid()));
+CREATE POLICY "Sellers can manage menu items" ON public.menu_items
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.restaurants r
+      WHERE r.id = menu_items.restaurant_id
+        AND (r.seller_id = auth.uid() OR public.is_admin())
+    )
+  );
 
--- Orders Policies
+-- --------------------------------------------------------
+-- ORDERS RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
-CREATE POLICY "Users can view own orders" ON public.orders FOR SELECT
-  USING (
-    auth.uid() = user_id OR
-    auth.uid() = customer_id OR
-    auth.uid() = driver_id OR
-    EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = orders.restaurant_id AND r.seller_id = auth.uid())
+CREATE POLICY "Users can view own orders" ON public.orders
+  FOR SELECT USING (
+    auth.uid() = user_id
+    OR auth.uid() = customer_id
+    OR auth.uid() = driver_id
+    OR EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = orders.restaurant_id AND r.seller_id = auth.uid())
+    OR public.is_admin()
   );
 
 DROP POLICY IF EXISTS "Authenticated users can create orders" ON public.orders;
-CREATE POLICY "Authenticated users can create orders" ON public.orders FOR INSERT
-  WITH CHECK (auth.uid() = user_id OR auth.uid() = customer_id);
-
-DROP POLICY IF EXISTS "Users can update own orders" ON public.orders;
-CREATE POLICY "Users can update own orders" ON public.orders FOR UPDATE
-  USING (
-    auth.uid() = user_id OR
-    auth.uid() = customer_id OR
-    auth.uid() = driver_id OR
-    EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = orders.restaurant_id AND r.seller_id = auth.uid())
+CREATE POLICY "Authenticated users can create orders" ON public.orders
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    OR auth.uid() = customer_id
+    OR auth.role() = 'service_role'
   );
 
--- Order Items Policies
+DROP POLICY IF EXISTS "Users can update own orders" ON public.orders;
+CREATE POLICY "Users can update own orders" ON public.orders
+  FOR UPDATE USING (
+    auth.uid() = user_id
+    OR auth.uid() = customer_id
+    OR auth.uid() = driver_id
+    OR EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = orders.restaurant_id AND r.seller_id = auth.uid())
+    OR public.is_admin()
+    OR auth.role() = 'service_role'
+  );
+
+-- --------------------------------------------------------
+-- ORDER ITEMS RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Users can view own order items" ON public.order_items;
-CREATE POLICY "Users can view own order items" ON public.order_items FOR SELECT
-  USING (
+CREATE POLICY "Users can view own order items" ON public.order_items
+  FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.orders o
       WHERE o.id = order_items.order_id AND (
-        o.user_id = auth.uid() OR
-        o.customer_id = auth.uid() OR
-        o.driver_id = auth.uid() OR
-        EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = o.restaurant_id AND r.seller_id = auth.uid())
+        o.user_id = auth.uid()
+        OR o.customer_id = auth.uid()
+        OR o.driver_id = auth.uid()
+        OR EXISTS (SELECT 1 FROM public.restaurants r WHERE r.id = o.restaurant_id AND r.seller_id = auth.uid())
+        OR public.is_admin()
       )
     )
   );
 
--- Payments Policies
-DROP POLICY IF EXISTS "Users can view own payments" ON public.payments;
-CREATE POLICY "Users can view own payments" ON public.payments FOR SELECT
-  USING (
+DROP POLICY IF EXISTS "Users can insert own order items" ON public.order_items;
+CREATE POLICY "Users can insert own order items" ON public.order_items
+  FOR INSERT WITH CHECK (
     EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = order_items.order_id AND (
+        o.user_id = auth.uid()
+        OR o.customer_id = auth.uid()
+        OR auth.role() = 'service_role'
+      )
+    )
+  );
+
+-- --------------------------------------------------------
+-- PAYMENTS RLS
+-- --------------------------------------------------------
+DROP POLICY IF EXISTS "Users can view own payments" ON public.payments;
+CREATE POLICY "Users can view own payments" ON public.payments
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.orders o
+      WHERE o.id = payments.order_id AND (
+        o.user_id = auth.uid()
+        OR o.customer_id = auth.uid()
+        OR public.is_admin()
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Service role can insert payments" ON public.payments;
+CREATE POLICY "Service role can insert payments" ON public.payments
+  FOR INSERT WITH CHECK (
+    auth.role() = 'service_role'
+    OR EXISTS (
       SELECT 1 FROM public.orders o
       WHERE o.id = payments.order_id AND (o.user_id = auth.uid() OR o.customer_id = auth.uid())
     )
   );
 
--- Addresses Policies
+-- --------------------------------------------------------
+-- ADDRESSES RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Users can manage own addresses" ON public.addresses;
-CREATE POLICY "Users can manage own addresses" ON public.addresses FOR ALL
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own addresses" ON public.addresses
+  FOR ALL USING (auth.uid() = user_id OR public.is_admin());
 
--- Driver Locations Policies
+-- --------------------------------------------------------
+-- DRIVER LOCATIONS RLS
+-- --------------------------------------------------------
 DROP POLICY IF EXISTS "Users can view assigned driver location" ON public.driver_locations;
-CREATE POLICY "Users can view assigned driver location" ON public.driver_locations FOR SELECT
-  USING (
-    auth.uid() = driver_id OR
-    EXISTS (
+CREATE POLICY "Users can view assigned driver location" ON public.driver_locations
+  FOR SELECT USING (
+    auth.uid() = driver_id
+    OR EXISTS (
       SELECT 1 FROM public.orders o
       WHERE o.id = driver_locations.order_id AND (o.user_id = auth.uid() OR o.customer_id = auth.uid())
     )
+    OR public.is_admin()
   );
 
 DROP POLICY IF EXISTS "Drivers can update location" ON public.driver_locations;
-CREATE POLICY "Drivers can update location" ON public.driver_locations FOR ALL
-  USING (auth.uid() = driver_id);
+CREATE POLICY "Drivers can update location" ON public.driver_locations
+  FOR ALL USING (auth.uid() = driver_id OR auth.role() = 'service_role' OR public.is_admin());
 
 -- ========================================================
 -- SEED DATA: RESTAURANTS, CATEGORIES & MENU ITEMS (INR)
