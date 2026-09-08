@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 const CartContext = createContext();
 
 const STORAGE_LOCATION_KEY = 'bigbites_customer_delivery_location';
+const STORAGE_LAST_ORDER_RESTAURANT_KEY = 'bigbites_last_order_restaurant';
 
 const DEFAULT_LOCATION = {
   address: 'Connaught Place, Inner Circle, New Delhi 110001',
@@ -17,7 +18,15 @@ export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
   const [activeCartRestaurant, setActiveCartRestaurant] = useState(null);
   const [lastOrderItems, setLastOrderItems] = useState([]);
-  
+  const [lastOrderRestaurant, setLastOrderRestaurant] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_LAST_ORDER_RESTAURANT_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [deliveryLocation, setDeliveryLocationState] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_LOCATION_KEY);
@@ -58,10 +67,6 @@ export function CartProvider({ children }) {
     }
   };
 
-  /**
-   * Parse price to a clean number. Handles numeric, "₹329", "$12.99", etc.
-   * Automatically normalizes legacy/stale prices into 200-500 INR range.
-   */
   const _parsePrice = (price) => {
     let num = typeof price === 'number' ? price : (parseFloat(String(price || '').replace(/[^0-9.]/g, '')) || 0);
     if (num > 0 && num < 200) {
@@ -81,15 +86,7 @@ export function CartProvider({ children }) {
         return copy;
       }
       const rawPriceNum = _parsePrice(item.price);
-      return [
-        ...prev,
-        {
-          ...item,
-          price: rawPriceNum,
-          rawPrice: rawPriceNum,
-          quantity: item.quantity || 1
-        }
-      ];
+      return [...prev, { ...item, price: rawPriceNum, rawPrice: rawPriceNum, quantity: item.quantity || 1 }];
     });
   };
 
@@ -132,7 +129,15 @@ export function CartProvider({ children }) {
   };
 
   const clearCart = () => {
-    setLastOrderItems([...cartItems]); // snapshot
+    setLastOrderItems([...cartItems]);
+    if (activeCartRestaurant) {
+      setLastOrderRestaurant(activeCartRestaurant);
+      try {
+        localStorage.setItem(STORAGE_LAST_ORDER_RESTAURANT_KEY, JSON.stringify(activeCartRestaurant));
+      } catch (e) {
+        // ignore
+      }
+    }
     setCartItems([]);
     setActiveCartRestaurant(null);
   };
@@ -147,6 +152,7 @@ export function CartProvider({ children }) {
         cartItems,
         activeCartRestaurant,
         lastOrderItems,
+        lastOrderRestaurant,
         deliveryLocation,
         setDeliveryLocation,
         isLocationModalOpen,
