@@ -185,17 +185,17 @@ export default function CheckoutPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
-            {/* 1. Delivery Address with Coordinates & Map Marker (Requirement 6) */}
+            {/* 1. Delivery Location Card */}
             <div
               style={{
                 backgroundColor: '#FFFFFF',
-                padding: '1.75rem',
+                padding: 'clamp(1rem, 3vw, 1.75rem)',
                 borderRadius: '20px',
                 border: '1px solid #ECE7DF',
                 boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.6rem' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#78716C', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Delivery Destination Snapshot
@@ -212,13 +212,14 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => setLocationModalOpen(true)}
                   className="btn-see-all"
+                  style={{ minHeight: '40px', padding: '0.4rem 0.85rem' }}
                 >
                   Change Location
                 </button>
               </div>
 
               {/* Map Marker Preview */}
-              <div style={{ height: '140px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #ECE7DF' }}>
+              <div style={{ height: 'min(140px, 25vh)', borderRadius: '12px', overflow: 'hidden', border: '1px solid #ECE7DF', minHeight: '110px' }}>
                 <GoogleMapsView
                   customerLocation={{
                     lat: currentLat,
@@ -229,7 +230,7 @@ export default function CheckoutPage() {
                   showRoute={false}
                   interactive={false}
                   height="100%"
-                  minHeight="140px"
+                  minHeight="110px"
                 />
               </div>
             </div>
@@ -238,7 +239,7 @@ export default function CheckoutPage() {
             <div
               style={{
                 backgroundColor: '#FFFFFF',
-                padding: '1.75rem',
+                padding: 'clamp(1rem, 3vw, 1.75rem)',
                 borderRadius: '20px',
                 border: '1px solid #ECE7DF',
                 boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
@@ -252,7 +253,7 @@ export default function CheckoutPage() {
                 {cartItems.map((item) => {
                   const p = typeof item.rawPrice === 'number' ? item.rawPrice : parsePrice(item.price);
                   return (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         {item.image && (
                           <img src={item.image} alt={item.name} style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'cover' }} />
@@ -273,7 +274,7 @@ export default function CheckoutPage() {
             <div
               style={{
                 backgroundColor: '#FFFFFF',
-                padding: '1.5rem',
+                padding: 'clamp(1rem, 3vw, 1.5rem)',
                 borderRadius: '20px',
                 border: '1px solid #ECE7DF'
               }}
@@ -283,25 +284,25 @@ export default function CheckoutPage() {
               </h3>
               
               {appliedCoupon ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F0FDF4', padding: '0.85rem 1.25rem', borderRadius: '12px', border: '1px solid #86EFAC' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F0FDF4', padding: '0.85rem 1.25rem', borderRadius: '12px', border: '1px solid #86EFAC', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ color: '#166534', fontWeight: 700, fontSize: '0.9rem' }}>
                     ✓ {appliedCoupon.code} applied — {appliedCoupon.discount_value}% OFF
                   </div>
-                  <button onClick={handleRemoveCoupon} style={{ background: 'none', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <button onClick={handleRemoveCoupon} style={{ background: 'none', border: 'none', color: '#DC2626', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem', minHeight: '44px', padding: '0.3rem 0.6rem' }}>
                     Remove
                   </button>
                 </div>
               ) : (
                 <div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <input 
                       type="text" 
                       placeholder="Enter promo code (e.g. EAT50)" 
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
-                      style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #ECE7DF', textTransform: 'uppercase', outline: 'none' }}
+                      style={{ flex: '1 1 180px', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #ECE7DF', textTransform: 'uppercase', outline: 'none', minHeight: '44px' }}
                     />
-                    <button onClick={handleApplyCoupon} className="btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.88rem' }}>
+                    <button onClick={handleApplyCoupon} className="btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.88rem', minHeight: '44px' }}>
                       Apply
                     </button>
                   </div>
@@ -315,7 +316,7 @@ export default function CheckoutPage() {
               <div
                 style={{
                   backgroundColor: '#FFFFFF',
-                  padding: '1.75rem',
+                  padding: 'clamp(1rem, 3vw, 1.75rem)',
                   borderRadius: '20px',
                   border: '1px solid #ECE7DF'
                 }}

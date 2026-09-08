@@ -182,8 +182,10 @@ export default function FoodProductCard({ product, onAddToCart, onOpenCustomize 
             onClick={() => onAddToCart(product)}
             aria-label={`Add ${product.name} to cart`}
             style={{
-              width: '36px',
-              height: '36px',
+              width: '40px',
+              height: '40px',
+              minWidth: '40px',
+              minHeight: '40px',
               borderRadius: '50%',
               backgroundColor: 'var(--brand-primary)',
               color: '#FFFFFF',
@@ -192,7 +194,7 @@ export default function FoodProductCard({ product, onAddToCart, onOpenCustomize 
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              fontSize: '1.25rem',
+              fontSize: '1.3rem',
               fontWeight: 600,
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               boxShadow: '0 4px 10px rgba(200,69,35,0.3)'

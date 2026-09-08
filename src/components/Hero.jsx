@@ -193,6 +193,7 @@ export default function Hero({ onOpenCart, onOpenOrderTracking }) {
 
             {/* Floating Rating Badge Top Right */}
             <div
+              className="hero-rating-badge"
               style={{
                 position: 'absolute',
                 top: '15px',
@@ -237,6 +238,7 @@ export default function Hero({ onOpenCart, onOpenOrderTracking }) {
 
             {/* Floating Live Badge: 28 min delivery */}
             <div
+              className="hero-eta-badge"
               style={{
                 position: 'absolute',
                 bottom: '18px',
@@ -297,6 +299,24 @@ export default function Hero({ onOpenCart, onOpenOrderTracking }) {
           }
           #hero div[style*="display: 'flex'"][style*="gap: '1rem'"] {
             justify-content: center;
+          }
+        }
+        @media (max-width: 600px) {
+          .hero-rating-badge {
+            right: 8px !important;
+            top: 8px !important;
+            padding: 0.4rem 0.75rem !important;
+          }
+          .hero-eta-badge {
+            left: 8px !important;
+            bottom: 8px !important;
+            padding: 0.45rem 0.85rem !important;
+          }
+        }
+        @media (max-width: 480px) {
+          #hero {
+            padding-top: 5.2rem !important;
+            padding-bottom: 2.5rem !important;
           }
         }
       `}</style>

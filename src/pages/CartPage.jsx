@@ -40,19 +40,22 @@ export default function CartPage() {
             {cartItems.map((item, idx) => (
               <div
                 key={idx}
+                className="cart-item-row"
                 style={{
                   border: '1px solid #ECE7DF',
                   borderRadius: '16px',
                   backgroundColor: '#FFFFFF',
-                  padding: '1.25rem 1.5rem',
+                  padding: 'clamp(1rem, 2.5vw, 1.25rem) clamp(1rem, 3vw, 1.5rem)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.8rem',
                   boxShadow: 'var(--shadow-sm)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <div>
+                <div style={{ minWidth: '160px', flex: '1 1 200px' }}>
                   <h4 style={{ fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '1.15rem', color: 'var(--brand-dark)', margin: 0 }}>
                     {item.name}
                   </h4>
@@ -60,11 +63,11 @@ export default function CartPage() {
                     {formatINR(parsePrice(item.price))}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
                   <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ECE7DF', borderRadius: '9999px', backgroundColor: '#FDFBF7', overflow: 'hidden' }}>
                     <button
                       onClick={() => handleUpdateQuantity(item.id, -1)}
-                      style={{ border: 'none', background: 'none', padding: '0.45rem 0.85rem', fontWeight: 800, cursor: 'pointer', color: 'var(--brand-dark)', fontSize: '1rem' }}
+                      style={{ border: 'none', background: 'none', padding: '0.55rem 0.95rem', fontWeight: 800, cursor: 'pointer', color: 'var(--brand-dark)', fontSize: '1rem', minHeight: '44px', minWidth: '40px' }}
                       aria-label="Decrease quantity"
                     >
                       −
@@ -72,7 +75,7 @@ export default function CartPage() {
                     <span style={{ padding: '0 0.5rem', fontWeight: 700, minWidth: '24px', textAlign: 'center', fontSize: '0.95rem' }}>{item.quantity}</span>
                     <button
                       onClick={() => handleUpdateQuantity(item.id, 1)}
-                      style={{ border: 'none', background: 'none', padding: '0.45rem 0.85rem', fontWeight: 800, cursor: 'pointer', color: 'var(--brand-dark)', fontSize: '1rem' }}
+                      style={{ border: 'none', background: 'none', padding: '0.55rem 0.95rem', fontWeight: 800, cursor: 'pointer', color: 'var(--brand-dark)', fontSize: '1rem', minHeight: '44px', minWidth: '40px' }}
                       aria-label="Increase quantity"
                     >
                       +
@@ -80,7 +83,7 @@ export default function CartPage() {
                   </div>
                   <button
                     onClick={() => handleRemoveItem(item.id)}
-                    style={{ border: 'none', background: 'none', color: '#A8A29E', cursor: 'pointer', fontSize: '1.25rem', padding: '0.3rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ border: 'none', background: 'none', color: '#A8A29E', cursor: 'pointer', fontSize: '1.25rem', padding: '0.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}
                     title="Remove item"
                     aria-label="Remove item"
                   >
@@ -93,7 +96,7 @@ export default function CartPage() {
 
           <div style={{ borderTop: '1px solid #ECE7DF', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
             {/* Bill Summary Breakdown */}
-            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE7DF', borderRadius: '20px', padding: '1.75rem', marginBottom: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #ECE7DF', borderRadius: '20px', padding: 'clamp(1.2rem, 3vw, 1.75rem)', marginBottom: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', margin: '0 0 1.25rem', fontSize: '1.25rem', color: 'var(--brand-dark)', fontWeight: 700 }}>
                 Bill Details
               </h3>
@@ -113,7 +116,7 @@ export default function CartPage() {
                   <span style={{ fontWeight: 600, color: 'var(--brand-dark)' }}>{formatINR(Math.round(subtotal * 0.05))}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.35rem', fontWeight: 800 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'clamp(1.15rem, 3vw, 1.35rem)', fontWeight: 800 }}>
                 <span style={{ color: 'var(--brand-dark)' }}>Grand Total</span>
                 <span style={{ color: 'var(--brand-primary)' }}>
                   {formatINR(subtotal + (subtotal > 499 || subtotal === 0 ? 0 : 39) + Math.round(subtotal * 0.05))}
@@ -121,11 +124,12 @@ export default function CartPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="cart-action-buttons" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <button
                 onClick={() => navigate('/')}
+                className="cart-back-btn"
                 style={{
-                  width: '35%',
+                  flex: '1 1 180px',
                   padding: '1rem',
                   backgroundColor: '#FFFFFF',
                   color: 'var(--brand-dark)',
@@ -136,20 +140,22 @@ export default function CartPage() {
                   fontSize: '0.95rem',
                   cursor: 'pointer',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  minHeight: '48px'
                 }}
               >
                 ← Back to Menu
               </button>
               <button
                 onClick={() => navigate('/checkout')}
-                className="btn-primary"
+                className="btn-primary cart-checkout-btn"
                 style={{
-                  width: '65%',
+                  flex: '2 1 240px',
                   fontSize: '1.05rem',
                   padding: '1rem',
                   borderRadius: '14px',
-                  boxShadow: '0 8px 20px rgba(200,69,35,0.25)'
+                  boxShadow: '0 8px 20px rgba(200,69,35,0.25)',
+                  minHeight: '48px'
                 }}
               >
                 Proceed to Checkout 🛵

@@ -25,6 +25,7 @@ export default function Navbar({
   return (
     <>
       <header
+        className="navbar-header"
         style={{
           position: 'fixed',
           top: 0,
@@ -36,7 +37,7 @@ export default function Navbar({
           WebkitBackdropFilter: 'blur(12px)',
           borderBottom: scrolled ? '1px solid #ECE7DF' : '1px solid transparent',
           transition: 'all 0.3s ease',
-          padding: scrolled ? '0.75rem 2rem' : '1.1rem 2rem'
+          padding: scrolled ? '0.65rem 2rem' : '0.95rem 2rem'
         }}
       >
         <div
@@ -46,7 +47,7 @@ export default function Navbar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '1.5rem'
+            gap: '0.75rem'
           }}
         >
           {/* Brand Logo - BIGBITES */}
@@ -57,13 +58,14 @@ export default function Navbar({
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
-              lineHeight: 1
+              lineHeight: 1,
+              flexShrink: 0
             }}
           >
             <span
               style={{
                 fontFamily: 'var(--font-serif)',
-                fontSize: '1.85rem',
+                fontSize: 'clamp(1.45rem, 4vw, 1.85rem)',
                 fontWeight: 800,
                 color: 'var(--brand-dark)',
                 letterSpacing: '-0.03em',
@@ -228,7 +230,7 @@ export default function Navbar({
                 >
                   {currentUser.full_name ? currentUser.full_name[0].toUpperCase() : 'U'}
                 </div>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
+                <span className="navbar-account-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
                   {currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Account'}
                 </span>
               </button>
@@ -265,7 +267,7 @@ export default function Navbar({
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <span>Sign In</span>
+                <span className="navbar-account-label">Sign In</span>
               </button>
             )}
 
@@ -471,19 +473,37 @@ export default function Navbar({
 
       <style>{`
         @media (max-width: 860px) {
+          .navbar-header {
+            padding: 0.65rem 1.25rem !important;
+          }
           .navbar-desktop-nav {
             display: none !important;
           }
           .navbar-mobile-toggle {
-            display: block !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            min-height: 44px;
           }
           .delivery-pill-btn {
             display: none !important;
           }
         }
-        @media (max-width: 480px) {
+        @media (max-width: 520px) {
+          .navbar-header {
+            padding: 0.55rem 0.85rem !important;
+          }
           .navbar-order-btn {
             display: none !important;
+          }
+          .navbar-account-label {
+            display: none !important;
+          }
+        }
+        @media (max-width: 360px) {
+          .navbar-header {
+            padding: 0.5rem 0.65rem !important;
           }
         }
       `}</style>

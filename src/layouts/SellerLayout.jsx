@@ -43,19 +43,126 @@ export default function SellerLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--cream)', color: 'var(--black)' }}>
+    <div className="seller-layout-container" style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--cream)', color: 'var(--black)' }}>
       <CustomCursor />
       
-      {/* Mobile Header (Visible only on small screens) */}
-      <div 
-        style={{
-          display: 'none', // Handled via media queries in a real app, here we use inline styles + window size in a broader setup, but for simplicity we'll use a flex layout trick. 
-          // Actually, let's use standard CSS classes if we had Tailwind, but we don't.
-        }}
-      >
-      </div>
+      {/* Mobile Top Header */}
+      <header className="seller-mobile-header" style={{
+        display: 'none',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '60px',
+        backgroundColor: 'var(--black)',
+        color: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 1.25rem',
+        zIndex: 100,
+        borderBottom: '1px solid #333'
+      }}>
+        <div onClick={() => navigate('/')} style={{ cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--red)' }}>
+          BigBites<span style={{ fontSize: '0.75rem', color: '#FFF' }}>.PARTNER</span>
+        </div>
 
-      {/* Sidebar */}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle Seller Navigation"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#FFFFFF',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            padding: '0.4rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: '44px',
+            minHeight: '44px'
+          }}
+        >
+          {mobileMenuOpen ? '✕' : '☰'}
+        </button>
+      </header>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div
+          className="seller-mobile-drawer"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            top: '60px',
+            backgroundColor: 'rgba(28, 25, 23, 0.98)',
+            backdropFilter: 'blur(12px)',
+            zIndex: 99,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '1.5rem',
+            gap: '0.5rem',
+            overflowY: 'auto'
+          }}
+        >
+          <p style={{ color: '#A8A29E', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 0.5rem' }}>
+            Owner: {user?.full_name || user?.email || 'Seller'}
+          </p>
+
+          {navItems.map((item) => {
+            const isActive = location.pathname.startsWith(item.path);
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNav(item.path)}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0.9rem 1.25rem',
+                  background: isActive ? 'var(--yellow)' : 'rgba(255,255,255,0.06)',
+                  color: isActive ? 'var(--black)' : '#FFFFFF',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  minHeight: '48px'
+                }}
+              >
+                <span style={{ fontSize: '1.25rem' }}>{item.icon}</span>
+                {item.label}
+              </button>
+            );
+          })}
+
+          <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid #333' }}>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                padding: '0.85rem',
+                backgroundColor: '#FEE2E2',
+                color: '#DC2626',
+                border: '1px solid #FCA5A5',
+                borderRadius: '12px',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 800,
+                cursor: 'pointer',
+                minHeight: '44px'
+              }}
+            >
+              LOGOUT
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Sidebar */}
       <aside
         style={{
           width: '280px',
@@ -132,15 +239,25 @@ export default function SellerLayout() {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
+      <main className="seller-main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
         <Outlet />
       </main>
 
-      {/* Simple Media Query style injection for mobile */}
+      {/* Media Queries */}
       <style>{`
         @media (max-width: 768px) {
           .seller-sidebar {
             display: none !important;
+          }
+          .seller-mobile-header {
+            display: flex !important;
+          }
+          .seller-main-content {
+            padding-top: 60px !important;
+            height: calc(100vh - 60px) !important;
+          }
+          .seller-main-content > div {
+            padding: 1.25rem 1rem !important;
           }
         }
       `}</style>

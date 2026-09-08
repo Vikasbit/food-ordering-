@@ -109,17 +109,21 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
           boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)',
           width: '100%',
           maxWidth: '460px',
+          maxHeight: '92vh',
+          display: 'flex',
+          flexDirection: 'column',
           overflow: 'hidden'
         }}
       >
         {/* Header */}
         <div
           style={{
-            padding: '1.5rem 1.75rem 1.25rem',
+            padding: '1.25rem 1.5rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid #F5F0E8'
+            borderBottom: '1px solid #F5F0E8',
+            flexShrink: 0
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
@@ -134,7 +138,8 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '1.25rem',
-                boxShadow: '0 2px 8px rgba(200,69,35,0.12)'
+                boxShadow: '0 2px 8px rgba(200,69,35,0.12)',
+                flexShrink: 0
               }}
             >
               👤
@@ -185,7 +190,8 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              flexShrink: 0
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#E5E0D8';
@@ -199,7 +205,7 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
         </div>
 
         {/* Content Body */}
-        <div style={{ padding: '1.5rem 1.75rem' }}>
+        <div style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto' }}>
           {user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div

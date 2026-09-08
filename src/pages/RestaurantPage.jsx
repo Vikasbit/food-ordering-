@@ -88,11 +88,11 @@ export default function RestaurantPage() {
             background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%)',
             display: 'flex',
             alignItems: 'flex-end',
-            padding: '2.5rem'
+            padding: 'clamp(1.2rem, 3.5vw, 2.5rem)'
           }}
         >
           <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', color: '#FFF' }}>
-            <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem' }}>
+            <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
               <span style={{ backgroundColor: 'var(--yellow)', color: '#111', fontSize: '0.75rem', fontWeight: 900, padding: '0.2rem 0.6rem', fontFamily: 'var(--font-display)' }}>
                 ⭐ {restaurant.rating || 4.8} ({restaurant.reviews_count || 140}+ REVIEWS)
               </span>
@@ -101,11 +101,11 @@ export default function RestaurantPage() {
               </span>
             </div>
 
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 4vw, 3.2rem)', margin: '0.2rem 0', color: '#FFF', lineHeight: 1 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 3.2rem)', margin: '0.2rem 0', color: '#FFF', lineHeight: 1.1 }}>
               {restaurant.name}
             </h1>
 
-            <p style={{ margin: '0.4rem 0 1rem', fontSize: '1rem', opacity: 0.9 }}>
+            <p style={{ margin: '0.4rem 0 1rem', fontSize: 'clamp(0.85rem, 2vw, 1rem)', opacity: 0.9 }}>
               📍 {restaurant.address} · {restaurant.cuisine}
             </p>
 
@@ -117,8 +117,11 @@ export default function RestaurantPage() {
                 style={{
                   backgroundColor: 'var(--yellow)',
                   color: '#111',
-                  padding: '0.5rem 1rem',
-                  fontSize: '0.85rem'
+                  padding: '0.55rem 1rem',
+                  fontSize: '0.85rem',
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center'
                 }}
               >
                 🗺️ VIEW LOCATION ON MAP
@@ -132,9 +135,12 @@ export default function RestaurantPage() {
                   backgroundColor: 'transparent',
                   color: '#FFF',
                   borderColor: '#FFF',
-                  padding: '0.5rem 1rem',
+                  padding: '0.55rem 1rem',
                   fontSize: '0.85rem',
-                  textDecoration: 'none'
+                  textDecoration: 'none',
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center'
                 }}
               >
                 📍 GET DIRECTIONS ↗
@@ -145,19 +151,19 @@ export default function RestaurantPage() {
       </div>
 
       {/* Main Menu Section */}
-      <div style={{ maxWidth: '1200px', margin: '3rem auto', padding: '0 1.5rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', marginBottom: '2rem', borderBottom: '3px solid var(--black)', paddingBottom: '0.5rem' }}>
+      <div style={{ maxWidth: '1200px', margin: 'clamp(1.5rem, 3vw, 3rem) auto', padding: '0 clamp(0.85rem, 3vw, 1.5rem)' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', marginBottom: '1.5rem', borderBottom: '3px solid var(--black)', paddingBottom: '0.5rem' }}>
           OUR KITCHEN MENU
         </h2>
 
         {restaurant.categories && restaurant.categories.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1.8rem, 3.5vw, 3rem)' }}>
             {restaurant.categories.map((cat) => (
               <div key={cat.id}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--red)', marginBottom: '1rem' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)', color: 'var(--red)', marginBottom: '1rem' }}>
                   {cat.name}
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1.25rem' }}>
                   {cat.items?.map((item) => (
                     <div
                       key={item.id}
@@ -196,9 +202,10 @@ export default function RestaurantPage() {
                           width: '100%',
                           backgroundColor: 'var(--red)',
                           color: '#FFF',
-                          padding: '0.6rem',
+                          padding: '0.65rem',
                           fontSize: '0.85rem',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          minHeight: '44px'
                         }}
                       >
                         + ADD TO BAG
@@ -232,20 +239,25 @@ export default function RestaurantPage() {
             style={{
               backgroundColor: 'var(--cream)',
               border: 'var(--border-thick)',
-              padding: '2rem',
+              padding: 'clamp(1rem, 3vw, 2rem)',
               maxWidth: '650px',
               width: '100%',
-              boxShadow: '8px 8px 0px var(--black)'
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxShadow: '8px 8px 0px var(--black)',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', margin: 0 }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', margin: 0 }}>
                 📍 {restaurant.name}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowLocationModal(false)}
-                style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', fontWeight: 900 }}
+                style={{ background: 'transparent', border: 'none', fontSize: '1.5rem', cursor: 'pointer', fontWeight: 900, minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label="Close location modal"
               >
                 ✕
               </button>
@@ -255,7 +267,7 @@ export default function RestaurantPage() {
               {restaurant.address} · Phone: {restaurant.phone}
             </p>
 
-            <div style={{ height: '300px', border: '2.5px solid var(--black)', marginBottom: '1.2rem' }}>
+            <div style={{ height: 'min(300px, 40vh)', border: '2.5px solid var(--black)', marginBottom: '1.2rem', minHeight: '200px' }}>
               <GoogleMapsView
                 kitchenLocation={{
                   lat: restaurant.lat || restaurant.latitude || 28.6315,
@@ -266,17 +278,17 @@ export default function RestaurantPage() {
                 showRoute={false}
                 interactive={true}
                 height="100%"
-                minHeight="300px"
+                minHeight="200px"
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem', flexWrap: 'wrap' }}>
               <a
                 href={directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-editorial"
-                style={{ backgroundColor: 'var(--yellow)', color: '#111', padding: '0.6rem 1.2rem', textDecoration: 'none' }}
+                style={{ backgroundColor: 'var(--yellow)', color: '#111', padding: '0.6rem 1.2rem', textDecoration: 'none', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 OPEN IN GOOGLE MAPS ↗
               </a>
@@ -284,7 +296,7 @@ export default function RestaurantPage() {
                 type="button"
                 onClick={() => setShowLocationModal(false)}
                 className="btn-editorial"
-                style={{ backgroundColor: 'var(--black)', color: '#FFF', padding: '0.6rem 1.2rem' }}
+                style={{ backgroundColor: 'var(--black)', color: '#FFF', padding: '0.6rem 1.2rem', minHeight: '44px' }}
               >
                 CLOSE
               </button>

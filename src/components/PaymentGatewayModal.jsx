@@ -216,16 +216,18 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                   <span>Delivery & Matched Kitchen</span>
                   <span style={{ color: '#16A34A' }}>✅ Zone Verified</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="payment-location-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '12px', border: '1px solid #E5E0D8' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--brand-primary)', display: 'block' }}>DELIVERING TO:</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deliveryLocation?.address || 'Connaught Place, New Delhi'}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#78716C' }}>Label: {deliveryLocation?.label || 'HOME'}</span>
+                    <div style={{ fontSize: '0.72rem', color: '#78716C', fontWeight: 600 }}>Deliver to</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--brand-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      📍 {deliveryLocation?.address || 'Connaught Place, New Delhi'}
+                    </div>
                   </div>
                   <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '12px', border: '1px solid #E5E0D8' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#16A34A', display: 'block' }}>PREPARED BY:</span>
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nearestMatch.selectedKitchen.name}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#78716C' }}>ETA: ~{nearestMatch.totalEtaMin} min ({nearestMatch.distanceKm} km)</span>
+                    <div style={{ fontSize: '0.72rem', color: '#78716C', fontWeight: 600 }}>Preparing Kitchen</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--brand-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      👨‍🍳 {nearestMatch.selectedKitchen.name}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -260,7 +262,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                 <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#78716C', textTransform: 'uppercase', marginBottom: '0.8rem' }}>
                   SELECT PAYMENT METHOD
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+                <div className="payment-method-tabs" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
                   <button onClick={() => setActiveTab('upi_qr')} style={tabBtnStyle('upi_qr')}>
                     <span style={{ fontSize: '1.2rem' }}>📱</span><span>UPI SCAN</span>
                   </button>

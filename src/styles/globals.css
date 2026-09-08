@@ -63,20 +63,33 @@ html {
   background-color: var(--bg-main);
   color: var(--brand-dark);
   font-family: var(--font-sans);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   background-color: var(--bg-main);
   color: var(--brand-dark);
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-main);
@@ -283,14 +296,27 @@ button:active, .btn-primary:active, .btn-outline:active, .btn-editorial:active {
 
 /* Container */
 .container-clean {
-  max-width: 1280px;
+  width: 100%;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .container-clean {
-    padding: 0 1.25rem;
+    padding: 0 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .container-clean {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .container-clean {
+    padding: 0 0.75rem;
   }
 }
 
@@ -307,4 +333,49 @@ button:active, .btn-primary:active, .btn-outline:active, .btn-editorial:active {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+
+/* Responsive Fluid Grids */
+.responsive-food-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1180px) {
+  .responsive-food-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 820px) {
+  .responsive-food-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .responsive-food-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Responsive Table Container (scrolls only inside the table, never horizontal page scroll) */
+.table-responsive-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
+}
+
+/* Touch targets min 44px on mobile */
+@media (max-width: 768px) {
+  button, .btn-primary, .btn-outline, .btn-editorial {
+    min-height: 44px;
+  }
+}
+
 
