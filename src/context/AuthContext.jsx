@@ -109,6 +109,10 @@ export function AuthProvider({ children }) {
     setSavedAddresses(updated);
   };
 
+  const resendVerificationEmail = async (email) => {
+    return await authService.resendVerificationEmail(email);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -119,6 +123,7 @@ export function AuthProvider({ children }) {
         login,
         signUpCustomer,
         signUpSeller,
+        resendVerificationEmail,
         logout,
         addSavedAddress
       }}

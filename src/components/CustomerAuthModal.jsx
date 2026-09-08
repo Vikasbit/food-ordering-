@@ -3,20 +3,67 @@ import { useAuth } from '../context/AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'login', onSwitchToSeller }) {
-  const { user, login, signUpCustomer, logout } = useAuth();
-  const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
+  const { user, login, signUpCustomer, logout, resendVerificationEmail } = useAuth();
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot' | 'verify'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [pendingVerifyEmail, setPendingVerifyEmail] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Resend Verification Cooldown State
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+
+  // Countdown timer effect for email resend
+  useState(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [resendCooldown]);
 
   if (!isOpen) return null;
 
   const validateEmail = (val) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  };
+
+  const handleResendEmail = async () => {
+    const targetEmail = pendingVerifyEmail || email.trim();
+    if (!targetEmail) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
+    if (resendCooldown > 0 || isResending) return;
+
+    setIsResending(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      await resendVerificationEmail(targetEmail);
+      setSuccessMsg(`Verification email resent to ${targetEmail}. Please check your inbox.`);
+      setResendCooldown(60);
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('too many requests')) {
+        setErrorMsg('Too many email requests. Please wait a while before requesting another verification email.');
+        setResendCooldown(60);
+      } else {
+        setErrorMsg(msg || 'Failed to resend verification email.');
+      }
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -59,23 +106,36 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
         await login(cleanEmail, cleanPassword);
         onClose();
       } else if (mode === 'register') {
-        await signUpCustomer({
+        const res = await signUpCustomer({
           email: cleanEmail,
           password: cleanPassword,
           fullName: fullName.trim()
         });
-        onClose();
+
+        // If email confirmation is required, session will be null
+        if (!res?.session && isSupabaseConfigured) {
+          setPendingVerifyEmail(cleanEmail);
+          setMode('verify');
+          setResendCooldown(60);
+          setSuccessMsg('Account created! A verification link has been sent to your email.');
+        } else {
+          onClose();
+        }
       } else if (mode === 'forgot') {
         setSuccessMsg(`Password reset link sent to ${cleanEmail}. Check your inbox!`);
       }
     } catch (err) {
       const rawMsg = err.message || '';
-      if (rawMsg.toLowerCase().includes('invalid login credentials') || rawMsg.toLowerCase().includes('invalid email or password')) {
+      if (err.code === 'EMAIL_NOT_CONFIRMED' || rawMsg.toLowerCase().includes('email not confirmed') || rawMsg.toLowerCase().includes('verify your email')) {
+        setPendingVerifyEmail(cleanEmail);
+        setMode('verify');
+        setErrorMsg('Please verify your email before logging in.');
+      } else if (rawMsg.toLowerCase().includes('invalid login credentials') || rawMsg.toLowerCase().includes('invalid email or password')) {
         setErrorMsg('Invalid email or password.');
       } else if (rawMsg.toLowerCase().includes('already registered') || rawMsg.toLowerCase().includes('already exists')) {
         setErrorMsg('An account with this email already exists. Please log in.');
-      } else if (rawMsg.toLowerCase().includes('rate limit')) {
-        setErrorMsg('Too many attempts. Please wait a moment before trying again.');
+      } else if (rawMsg.toLowerCase().includes('rate limit') || rawMsg.toLowerCase().includes('too many requests')) {
+        setErrorMsg('Too many email requests. Please wait a while before requesting another verification email.');
       } else if (rawMsg.toLowerCase().includes('fetch') || rawMsg.toLowerCase().includes('network')) {
         setErrorMsg('Unable to connect to the authentication service. Please try again.');
       } else {
@@ -161,6 +221,8 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                   ? 'Welcome Back'
                   : mode === 'register'
                   ? 'Create Account'
+                  : mode === 'verify'
+                  ? 'Verify Email'
                   : 'Reset Password'}
               </h3>
               <p style={{ margin: 0, fontSize: '0.78rem', color: '#78716C' }}>
@@ -170,6 +232,8 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                   ? 'Sign in to order and track deliveries'
                   : mode === 'register'
                   ? 'Sign up to get fresh meals fast'
+                  : mode === 'verify'
+                  ? 'Confirm your email address to activate your account'
                   : 'Enter your email for password reset'}
               </p>
             </div>
@@ -300,10 +364,158 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                 Sign Out of Account
               </button>
             </div>
+          ) : mode === 'verify' ? (
+            /* Dedicated Professional Email Verification Screen */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'center', padding: '1rem 0' }}>
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FFF7ED',
+                  border: '2px solid #FFEDD5',
+                  color: 'var(--brand-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.8rem',
+                  margin: '0 auto',
+                  boxShadow: '0 4px 14px rgba(200,69,35,0.15)'
+                }}
+              >
+                ✉️
+              </div>
+
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.45rem', fontWeight: 800, margin: '0 0 0.4rem', color: 'var(--brand-dark)' }}>
+                  Verify your email
+                </h3>
+                <p style={{ margin: '0 0 0.6rem', fontSize: '0.9rem', color: '#78716C' }}>
+                  We've sent a verification link to:
+                </p>
+                <div
+                  style={{
+                    backgroundColor: '#FAF5EE',
+                    border: '1px solid #ECE7DF',
+                    borderRadius: '10px',
+                    padding: '0.6rem 1rem',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: 'var(--brand-dark)',
+                    display: 'inline-block',
+                    wordBreak: 'break-all'
+                  }}
+                >
+                  {pendingVerifyEmail || email || 'your email address'}
+                </div>
+                <p style={{ margin: '0.8rem 0 0', fontSize: '0.85rem', color: '#78716C', lineHeight: 1.5 }}>
+                  Please verify your email to activate your <strong>BIGBITES</strong> account and start placing orders.
+                </p>
+              </div>
+
+              {errorMsg && (
+                <div
+                  style={{
+                    backgroundColor: '#FEF2F2',
+                    color: '#991B1B',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    textAlign: 'left'
+                  }}
+                >
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
+              {successMsg && (
+                <div
+                  style={{
+                    backgroundColor: '#F0FDF4',
+                    color: '#166534',
+                    border: '1px solid #86EFAC',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    textAlign: 'left'
+                  }}
+                >
+                  ✅ {successMsg}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg('');
+                    setSuccessMsg('Enter your credentials to log in once confirmed.');
+                  }}
+                  className="btn-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem',
+                    borderRadius: '12px',
+                    fontSize: '0.95rem',
+                    fontWeight: 700
+                  }}
+                >
+                  I've verified my email → Log in
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={resendCooldown > 0 || isResending}
+                  style={{
+                    width: '100%',
+                    backgroundColor: resendCooldown > 0 || isResending ? '#F5F5F4' : '#FFFFFF',
+                    color: resendCooldown > 0 || isResending ? '#A8A29E' : 'var(--brand-dark)',
+                    border: '1px solid #ECE7DF',
+                    borderRadius: '12px',
+                    padding: '0.75rem',
+                    fontSize: '0.88rem',
+                    fontWeight: 600,
+                    cursor: resendCooldown > 0 || isResending ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isResending
+                    ? 'Sending...'
+                    : resendCooldown > 0
+                    ? `Resend available in ${resendCooldown}s`
+                    : 'Resend verification email'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--brand-primary)',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    marginTop: '0.25rem'
+                  }}
+                >
+                  ← Back to Login
+                </button>
+              </div>
+            </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
               {/* Modern Segmented Tab Switcher */}
-              {mode !== 'forgot' && (
+              {mode !== 'forgot' && mode !== 'verify' && (
                 <div
                   style={{
                     backgroundColor: '#F5F5F4',

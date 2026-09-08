@@ -33,13 +33,17 @@ export default function SellerRegisterPage() {
     setLoading(true);
     
     try {
-      await signUpSeller({ fullName: name, email, phone, password });
+      const res = await signUpSeller({ fullName: name, email, phone, password });
+      if (isSupabaseConfigured && !res?.session) {
+        setError('Account registered! Please verify your email before logging in to setup your restaurant.');
+        setLoading(false);
+        return;
+      }
       try {
         await login(email, password);
       } catch (e) {
-        // Continue if already authenticated
+        // Handled if session already valid
       }
-      // Redirect directly to setup page after registration
       navigate('/seller/restaurant/setup');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');

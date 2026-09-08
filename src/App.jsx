@@ -27,6 +27,8 @@ import DriverSimulatorPage from './pages/dev/DriverSimulatorPage';
 import './styles/globals.css';
 import './styles/animations.css';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -41,18 +43,53 @@ export default function App() {
               <Route path="order/:id" element={<OrderConfirmationPage />} />
               <Route path="orders/:orderId/track" element={<OrderConfirmationPage />} />
               <Route path="restaurant/:id" element={<RestaurantPage />} />
-              <Route path="/dev/driver" element={<DriverSimulatorPage />} />
-              <Route path="/driver" element={<DriverSimulatorPage />} />
-              <Route path="orders" element={<OrdersPage />} />
+              <Route
+                path="/dev/driver"
+                element={
+                  <ProtectedRoute allowedRoles={['delivery_partner', 'admin', 'seller']}>
+                    <DriverSimulatorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/driver"
+                element={
+                  <ProtectedRoute allowedRoles={['delivery_partner', 'admin', 'seller']}>
+                    <DriverSimulatorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="orders"
+                element={
+                  <ProtectedRoute allowedRoles={['customer', 'seller', 'admin']}>
+                    <OrdersPage />
+                  </ProtectedRoute>
+                }
+              />
             </Route>
 
             {/* Seller Auth Routes (No layout/sidebar) */}
             <Route path="/seller/login" element={<SellerLoginPage />} />
             <Route path="/seller/register" element={<SellerRegisterPage />} />
-            <Route path="/seller/restaurant/setup" element={<RestaurantSetupPage />} />
+            <Route
+              path="/seller/restaurant/setup"
+              element={
+                <ProtectedRoute allowedRoles={['seller', 'admin']}>
+                  <RestaurantSetupPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Seller Dashboard Routes (With sidebar) */}
-            <Route path="/seller" element={<SellerLayout />}>
+            <Route
+              path="/seller"
+              element={
+                <ProtectedRoute allowedRoles={['seller', 'admin']}>
+                  <SellerLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route path="dashboard" element={<SellerDashboardPage />} />
               <Route path="restaurant" element={<SellerRestaurantPage />} />
               <Route path="menu" element={<SellerMenuPage />} />

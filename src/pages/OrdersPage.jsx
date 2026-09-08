@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatINR } from '../utils/currency';
+import { orderService } from '../lib/supabase';
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -15,16 +16,22 @@ export default function OrdersPage() {
       return;
     }
     
-    // In a real app we'd fetch this from the backend
-    // Since we're using mock local storage for the DB:
-    const allOrders = JSON.parse(localStorage.getItem('bigbites_db_orders') || '[]');
-    // Filter to authenticated user and filter out ones that didn't complete payment
-    const myOrders = allOrders
-      .filter(o => o.customer_id === user.id && o.payment_status === 'CAPTURED')
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      
-    setOrders(myOrders);
-    setLoading(false);
+    let isMounted = true;
+    async function loadOrders() {
+      try {
+        const myOrders = await orderService.getCustomerOrders(user.id);
+        if (isMounted) {
+          setOrders(myOrders || []);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Failed to load customer orders:', err);
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadOrders();
+    return () => { isMounted = false; };
   }, [user, navigate]);
 
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Loading orders...</div>;

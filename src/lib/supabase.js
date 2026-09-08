@@ -209,12 +209,8 @@ export const authService = {
         throw new Error('Unable to create your account. Please try again.');
       }
 
-      // Obtain the authenticated Supabase session
-      let session = data?.session;
-      if (!session) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        session = sessionData?.session;
-      }
+      // If email confirmation is enabled in Supabase, data.session will be null upon signup
+      const session = data?.session || null;
 
       if (data?.user) {
         try {
@@ -271,9 +267,7 @@ export const authService = {
       });
       if (error) throw error;
 
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
+      const session = data?.session || null;
 
       if (data.user) {
         try {
@@ -344,14 +338,19 @@ export const authService = {
       });
       if (error) {
         const rawMsg = (error.message || '').toLowerCase();
-        if (rawMsg.includes('invalid login credentials') || rawMsg.includes('invalid email or password') || rawMsg.includes('invalid credentials')) {
+        if (rawMsg.includes('email not confirmed') || rawMsg.includes('email not verified') || rawMsg.includes('confirm your email') || rawMsg.includes('not confirmed')) {
+          const unconfirmedErr = new Error('Please verify your email before logging in.');
+          unconfirmedErr.code = 'EMAIL_NOT_CONFIRMED';
+          unconfirmedErr.email = cleanEmail;
+          throw unconfirmedErr;
+        } else if (rawMsg.includes('invalid login credentials') || rawMsg.includes('invalid email or password') || rawMsg.includes('invalid credentials')) {
           throw new Error('Invalid email or password.');
         } else if (rawMsg.includes('network') || rawMsg.includes('fetch')) {
           throw new Error('Unable to connect to the authentication service. Please try again.');
         } else if (rawMsg.includes('rate limit')) {
           throw new Error('Too many login attempts. Please wait a moment before trying again.');
         }
-        throw new Error('Invalid email or password.');
+        throw new Error(error.message || 'Invalid email or password.');
       }
 
       const {
@@ -359,7 +358,7 @@ export const authService = {
       } = await supabase.auth.getSession();
 
       if (!session || !data.user) {
-        throw new Error('Login failed. Please try again.');
+        throw new Error('Please verify your email before logging in.');
       }
 
       // Check if profile exists; if not, create it with user metadata
@@ -399,6 +398,27 @@ export const authService = {
     }
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(matched));
     return matched;
+  },
+
+  async resendVerificationEmail(email) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) throw new Error('Email is required');
+
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail
+      });
+      if (error) {
+        const rawMsg = (error.message || '').toLowerCase();
+        if (rawMsg.includes('rate limit') || rawMsg.includes('rate_limit') || rawMsg.includes('too many requests')) {
+          throw new Error('Too many email requests. Please wait a while before requesting another verification email.');
+        }
+        throw new Error(error.message || 'Unable to resend verification email.');
+      }
+      return true;
+    }
+    return true;
   },
 
   async logout() {

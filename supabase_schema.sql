@@ -200,24 +200,12 @@ CREATE POLICY "Sellers can update order status for their restaurant" ON public.o
 );
 
 -- ========================================================
--- DIRECT LOGIN SETUP (NO EMAIL VERIFICATION REQUIRED)
+-- PRODUCTION EMAIL VERIFICATION & RLS CONFIGURATION
 -- ========================================================
--- 1. Auto-confirm all existing users directly:
-UPDATE auth.users 
-SET email_confirmed_at = NOW() 
-WHERE email_confirmed_at IS NULL;
-
--- 2. Automatically mark every future registered user as confirmed on insert:
-CREATE OR REPLACE FUNCTION public.auto_confirm_new_user()
-RETURNS trigger AS $$
-BEGIN
-  NEW.email_confirmed_at = COALESCE(NEW.email_confirmed_at, NOW());
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS on_auth_user_auto_confirm ON auth.users;
-CREATE TRIGGER on_auth_user_auto_confirm
-  BEFORE INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.auto_confirm_new_user();
-
+-- Note: In Supabase Dashboard:
+-- Authentication -> Providers -> Email
+-- Ensure:
+--   Email Provider = ON
+--   Confirm Email = ON
+-- Users receive an email confirmation link upon signUp.
+-- Profiles table row is provisioned via on_auth_user_created trigger.

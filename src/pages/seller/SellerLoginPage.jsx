@@ -23,7 +23,11 @@ export default function SellerLoginPage() {
       }
       navigate('/seller/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      if (err.code === 'EMAIL_NOT_CONFIRMED' || err.message?.toLowerCase().includes('verify your email')) {
+        setError('Please verify your email before logging in to your seller portal.');
+      } else {
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
