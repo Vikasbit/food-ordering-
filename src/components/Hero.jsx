@@ -191,6 +191,50 @@ export default function Hero({ onOpenCart, onOpenOrderTracking }) {
               }}
             />
 
+            {/* Floating Rating Badge Top Right */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '-8px',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                borderRadius: '9999px',
+                padding: '0.5rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.55rem',
+                boxShadow: '0 10px 25px rgba(28,25,23,0.08)',
+                border: '1px solid #ECE7DF',
+                animation: 'floatSlow 6s ease-in-out infinite'
+              }}
+            >
+              <span
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  backgroundColor: '#FEF3C7',
+                  color: '#D97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.85rem'
+                }}
+              >
+                ⭐
+              </span>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
+                  4.8+ Rating
+                </p>
+                <p style={{ margin: 0, fontSize: '0.68rem', color: '#78716C' }}>
+                  Verified Reviews
+                </p>
+              </div>
+            </div>
+
             {/* Floating Live Badge: 28 min delivery */}
             <div
               style={{

@@ -91,59 +91,107 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         zIndex: 2500,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1rem',
-        backdropFilter: 'blur(4px)'
+        padding: '1rem'
       }}
     >
       <div
         style={{
-          backgroundColor: 'var(--cream)',
-          border: 'var(--border-thick)',
-          boxShadow: '10px 10px 0px var(--black)',
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #ECE7DF',
+          borderRadius: '24px',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)',
           width: '100%',
           maxWidth: '460px',
-          borderRadius: '4px',
           overflow: 'hidden'
         }}
       >
         {/* Header */}
         <div
           style={{
-            backgroundColor: 'var(--black)',
-            color: 'var(--cream)',
-            padding: '1.2rem 1.5rem',
+            padding: '1.5rem 1.75rem 1.25rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: 'var(--border-thick)'
+            borderBottom: '1px solid #F5F0E8'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <span style={{ fontSize: '1.4rem' }}>👤</span>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--yellow)', fontFamily: 'var(--font-display)' }}>
-              {user
-                ? 'MY ACCOUNT'
-                : mode === 'login'
-                ? 'CUSTOMER LOGIN'
-                : mode === 'register'
-                ? 'CREATE ACCOUNT'
-                : 'RESET PASSWORD'}
-            </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)',
+                color: 'var(--brand-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.25rem',
+                boxShadow: '0 2px 8px rgba(200,69,35,0.12)'
+              }}
+            >
+              👤
+            </div>
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  color: 'var(--brand-dark)',
+                  fontFamily: 'var(--font-serif)',
+                  letterSpacing: '-0.02em'
+                }}
+              >
+                {user
+                  ? 'My Account'
+                  : mode === 'login'
+                  ? 'Welcome Back'
+                  : mode === 'register'
+                  ? 'Create Account'
+                  : 'Reset Password'}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#78716C' }}>
+                {user
+                  ? 'Manage your customer profile'
+                  : mode === 'login'
+                  ? 'Sign in to order and track deliveries'
+                  : mode === 'register'
+                  ? 'Sign up to get fresh meals fast'
+                  : 'Enter your email for password reset'}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--cream)',
-              fontSize: '1.5rem',
-              fontWeight: 900,
-              cursor: 'pointer'
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              backgroundColor: '#FAF5EE',
+              border: '1px solid #ECE7DF',
+              color: '#57534E',
+              fontSize: '1rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E5E0D8';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FAF5EE';
             }}
           >
             ✕
@@ -151,85 +199,217 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
         </div>
 
         {/* Content Body */}
-        <div style={{ padding: '1.5rem' }}>
+        <div style={{ padding: '1.5rem 1.75rem' }}>
           {user ? (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div
                 style={{
-                  backgroundColor: 'var(--white)',
-                  border: 'var(--border-thick)',
-                  boxShadow: '3px 3px 0px var(--black)',
-                  padding: '1.2rem',
-                  marginBottom: '1.5rem'
+                  backgroundColor: '#FAF5EE',
+                  border: '1px solid #ECE7DF',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem'
                 }}
               >
-                <h4 style={{ margin: '0 0 0.4rem', fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
-                  {user.full_name || 'Customer Profile'}
-                </h4>
-                <p style={{ margin: '0 0 0.2rem', fontSize: '0.85rem' }}>📧 {user.email}</p>
-                {user.phone && <p style={{ margin: 0, fontSize: '0.85rem' }}>📞 {user.phone}</p>}
-                <span
+                <div
                   style={{
-                    display: 'inline-block',
-                    marginTop: '0.8rem',
-                    backgroundColor: 'var(--yellow)',
-                    color: 'var(--black)',
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.7rem',
-                    padding: '0.2rem 0.6rem',
-                    border: '1px solid #111'
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--brand-primary)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.4rem',
+                    fontWeight: 800,
+                    boxShadow: '0 4px 12px rgba(200,69,35,0.25)'
                   }}
                 >
-                  ROLE: {user.role?.toUpperCase()}
-                </span>
+                  {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
+                      {user.full_name || 'Customer'}
+                    </h4>
+                    <span
+                      style={{
+                        backgroundColor: '#DCFCE7',
+                        color: '#166534',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '0.15rem 0.55rem',
+                        borderRadius: '9999px',
+                        border: '1px solid #BBF7D0'
+                      }}
+                    >
+                      {user.role?.toUpperCase() || 'CUSTOMER'}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#78716C', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {user.email}
+                  </p>
+                  {user.phone && (
+                    <p style={{ margin: '0.1rem 0 0', fontSize: '0.8rem', color: '#A8A29E' }}>
+                      📞 {user.phone}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   logout();
                   onClose();
                 }}
-                className="btn-editorial"
-                style={{ width: '100%', backgroundColor: 'var(--red)', color: 'var(--white)', padding: '0.8rem' }}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#FEE2E2',
+                  color: '#DC2626',
+                  border: '1px solid #FECACA',
+                  borderRadius: '12px',
+                  padding: '0.8rem',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#DC2626';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FEE2E2';
+                  e.currentTarget.style.color = '#DC2626';
+                }}
               >
-                LOGOUT
+                Sign Out of Account
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
+              {/* Modern Segmented Tab Switcher */}
+              {mode !== 'forgot' && (
+                <div
+                  style={{
+                    backgroundColor: '#F5F5F4',
+                    padding: '4px',
+                    borderRadius: '12px',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '4px'
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                      setConfirmPassword('');
+                    }}
+                    style={{
+                      padding: '0.55rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: mode === 'login' ? 700 : 500,
+                      backgroundColor: mode === 'login' ? '#FFFFFF' : 'transparent',
+                      color: mode === 'login' ? 'var(--brand-dark)' : '#78716C',
+                      boxShadow: mode === 'login' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('register');
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                      setConfirmPassword('');
+                    }}
+                    style={{
+                      padding: '0.55rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: mode === 'register' ? 700 : 500,
+                      backgroundColor: mode === 'register' ? '#FFFFFF' : 'transparent',
+                      color: mode === 'register' ? 'var(--brand-dark)' : '#78716C',
+                      boxShadow: mode === 'register' ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Register
+                  </button>
+                </div>
+              )}
+
               {errorMsg && (
                 <div
                   style={{
-                    backgroundColor: '#F8D7DA',
-                    color: '#721C24',
-                    border: '1px solid #111',
-                    padding: '0.8rem',
+                    backgroundColor: '#FEF2F2',
+                    color: '#991B1B',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1rem',
                     fontSize: '0.85rem',
-                    fontWeight: 700
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
                   }}
                 >
-                  ⚠️ {errorMsg}
+                  <span>⚠️</span>
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
               {successMsg && (
                 <div
                   style={{
-                    backgroundColor: '#D4EDDA',
-                    color: '#155724',
-                    border: '1px solid #111',
-                    padding: '0.8rem',
+                    backgroundColor: '#F0FDF4',
+                    color: '#166534',
+                    border: '1px solid #86EFAC',
+                    borderRadius: '10px',
+                    padding: '0.75rem 1rem',
                     fontSize: '0.85rem',
-                    fontWeight: 700
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
                   }}
                 >
-                  ✅ {successMsg}
+                  <span>✅</span>
+                  <span>{successMsg}</span>
                 </div>
               )}
 
               {mode === 'register' && (
                 <div>
-                  <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
+                  <label
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#57534E',
+                      display: 'block',
+                      marginBottom: '0.35rem',
+                      letterSpacing: '0.02em'
+                    }}
+                  >
                     FULL NAME:
                   </label>
                   <input
@@ -238,13 +418,32 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Rahul Sharma"
-                    style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #E5E0D8',
+                      backgroundColor: '#FAFAF9',
+                      fontSize: '0.92rem',
+                      color: 'var(--brand-dark)',
+                      fontFamily: 'var(--font-sans)'
+                    }}
                   />
                 </div>
               )}
 
               <div>
-                <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
+                <label
+                  style={{
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#57534E',
+                    display: 'block',
+                    marginBottom: '0.35rem',
+                    letterSpacing: '0.02em'
+                  }}
+                >
                   EMAIL ADDRESS:
                 </label>
                 <input
@@ -253,29 +452,87 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="customer@bigbites.com"
-                  style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '12px',
+                    border: '1.5px solid #E5E0D8',
+                    backgroundColor: '#FAFAF9',
+                    fontSize: '0.92rem',
+                    color: 'var(--brand-dark)',
+                    fontFamily: 'var(--font-sans)'
+                  }}
                 />
               </div>
 
               {mode !== 'forgot' && (
                 <div>
-                  <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
-                    PASSWORD:
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label
+                      style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: '#57534E',
+                        letterSpacing: '0.02em'
+                      }}
+                    >
+                      PASSWORD:
+                    </label>
+                    {mode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot');
+                          setErrorMsg('');
+                          setSuccessMsg('');
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--brand-primary)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #E5E0D8',
+                      backgroundColor: '#FAFAF9',
+                      fontSize: '0.92rem',
+                      color: 'var(--brand-dark)',
+                      fontFamily: 'var(--font-sans)'
+                    }}
                   />
                 </div>
               )}
 
               {mode === 'register' && (
                 <div>
-                  <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
+                  <label
+                    style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#57534E',
+                      display: 'block',
+                      marginBottom: '0.35rem',
+                      letterSpacing: '0.02em'
+                    }}
+                  >
                     CONFIRM PASSWORD:
                   </label>
                   <input
@@ -284,7 +541,16 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid #E5E0D8',
+                      backgroundColor: '#FAFAF9',
+                      fontSize: '0.92rem',
+                      color: 'var(--brand-dark)',
+                      fontFamily: 'var(--font-sans)'
+                    }}
                   />
                 </div>
               )}
@@ -292,16 +558,18 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-editorial"
+                className="btn-primary"
                 style={{
                   width: '100%',
-                  backgroundColor: isSubmitting ? '#e0e0e0' : 'var(--yellow)',
-                  color: 'var(--black)',
-                  padding: '0.9rem',
+                  backgroundColor: isSubmitting ? '#A8A29E' : 'var(--brand-primary)',
+                  color: '#FFFFFF',
+                  padding: '0.85rem 1rem',
                   fontSize: '0.95rem',
-                  marginTop: '0.5rem',
+                  fontWeight: 700,
+                  borderRadius: '12px',
+                  marginTop: '0.4rem',
                   cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting ? 0.7 : 1
+                  boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(200, 69, 35, 0.3)'
                 }}
               >
                 {isSubmitting
@@ -311,67 +579,51 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                     ? 'Creating account...'
                     : 'Sending link...'
                   : mode === 'login'
-                  ? 'LOGIN TO BIGBITES →'
+                  ? 'Sign In to BIGBITES →'
                   : mode === 'register'
-                  ? 'REGISTER CUSTOMER ACCOUNT →'
-                  : 'SEND RESET LINK →'}
+                  ? 'Create Customer Account →'
+                  : 'Send Reset Link →'}
               </button>
 
-              {/* Mode Switchers */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '0.8rem' }}>
-                {mode === 'login' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('register');
-                        setErrorMsg('');
-                        setSuccessMsg('');
-                        setConfirmPassword('');
-                      }}
-                      style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 800, cursor: 'pointer' }}
-                    >
-                      New user? Register
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('forgot');
-                        setErrorMsg('');
-                        setSuccessMsg('');
-                      }}
-                      style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }}
-                    >
-                      Forgot password?
-                    </button>
-                  </>
-                ) : (
+              {mode === 'forgot' && (
+                <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
                   <button
                     type="button"
                     onClick={() => {
                       setMode('login');
                       setErrorMsg('');
                       setSuccessMsg('');
-                      setConfirmPassword('');
                     }}
-                    style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 800, cursor: 'pointer' }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--brand-primary)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
                   >
-                    Back to Login
+                    ← Back to Sign In
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Seller Partner link */}
               <div
                 style={{
-                  marginTop: '1.2rem',
-                  paddingTop: '1rem',
-                  borderTop: '1px solid #ccc',
-                  textAlign: 'center'
+                  marginTop: '1rem',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '12px',
+                  backgroundColor: '#FAF5EE',
+                  border: '1px solid #EFEAE2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem'
                 }}
               >
-                <span style={{ fontSize: '0.75rem', color: '#666', display: 'block', marginBottom: '0.4rem' }}>
-                  ARE YOU A RESTAURANT OWNER?
+                <span style={{ fontSize: '0.76rem', color: '#78716C', fontWeight: 600 }}>
+                  Are you a restaurant owner?
                 </span>
                 <button
                   type="button"
@@ -380,16 +632,19 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                     if (onSwitchToSeller) onSwitchToSeller();
                   }}
                   style={{
-                    backgroundColor: 'var(--black)',
-                    color: 'var(--yellow)',
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '0.75rem',
-                    padding: '0.4rem 0.8rem',
+                    backgroundColor: 'var(--brand-dark)',
+                    color: '#FFFFFF',
+                    fontFamily: 'var(--font-sans)',
+                    fontWeight: 600,
+                    fontSize: '0.76rem',
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '8px',
                     border: 'none',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  👨‍🍳 BECOME A RESTAURANT PARTNER →
+                  Partner Portal →
                 </button>
               </div>
             </form>

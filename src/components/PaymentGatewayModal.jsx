@@ -61,32 +61,37 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
   };
 
   const tabBtnStyle = (tabId) => ({
-    padding: '0.7rem 1rem',
-    fontFamily: 'var(--font-display)',
-    fontSize: '0.8rem',
-    border: 'var(--border-thick)',
-    backgroundColor: activeTab === tabId ? 'var(--yellow)' : 'var(--white)',
-    color: 'var(--black)',
+    padding: '0.75rem 0.5rem',
+    fontFamily: 'var(--font-sans)',
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    borderRadius: '12px',
+    border: activeTab === tabId ? '1.5px solid var(--brand-primary)' : '1px solid #E5E0D8',
+    backgroundColor: activeTab === tabId ? '#FFF7ED' : '#FFFFFF',
+    color: activeTab === tabId ? 'var(--brand-primary)' : 'var(--brand-dark)',
     cursor: 'pointer',
-    boxShadow: activeTab === tabId ? '3px 3px 0px var(--black)' : 'none',
+    boxShadow: activeTab === tabId ? '0 4px 12px rgba(200,69,35,0.12)' : '0 1px 3px rgba(0,0,0,0.02)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '0.3rem',
+    gap: '0.35rem',
     flex: 1,
-    textAlign: 'center'
+    textAlign: 'center',
+    transition: 'all 0.2s ease'
   });
 
   const inputStyle = {
     width: '100%',
-    padding: '0.7rem 1rem',
-    fontFamily: 'var(--font-body)',
+    padding: '0.75rem 1rem',
+    fontFamily: 'var(--font-sans)',
     fontSize: '0.9rem',
-    fontWeight: 700,
-    border: 'var(--border-thick)',
-    backgroundColor: 'var(--cream)',
+    fontWeight: 600,
+    borderRadius: '10px',
+    border: '1.5px solid #E5E0D8',
+    backgroundColor: '#FAFAF9',
     outline: 'none',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    color: 'var(--brand-dark)'
   };
 
   return (
@@ -100,8 +105,9 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(0,0,0,0.75)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           padding: '1rem'
         }}
       >
@@ -114,9 +120,10 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
             width: '100%',
             maxWidth: '640px',
             maxHeight: '92vh',
-            backgroundColor: 'var(--cream)',
-            border: '4px solid var(--black)',
-            boxShadow: '10px 10px 0px var(--black)',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '24px',
+            border: '1px solid #ECE7DF',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25)',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column'
@@ -125,54 +132,58 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
           {/* Header */}
           <div
             style={{
-              backgroundColor: 'var(--green, #16a34a)',
-              borderBottom: '4px solid var(--black)',
-              padding: '1.2rem 1.5rem',
-              color: 'var(--white)',
+              backgroundColor: '#0F766E',
+              backgroundImage: 'linear-gradient(135deg, #0F766E, #0D9488)',
+              padding: '1.25rem 1.75rem',
+              color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              borderBottom: '1px solid rgba(255,255,255,0.1)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
               <div
                 style={{
-                  width: '40px',
-                  height: '40px',
-                  backgroundColor: 'var(--yellow)',
-                  color: 'var(--black)',
-                  border: '2px solid var(--black)',
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(255,255,255,0.18)',
+                  color: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '1.2rem',
-                  boxShadow: '2px 2px 0px var(--black)'
+                  fontWeight: 800,
+                  fontSize: '1.1rem'
                 }}
               >
                 🔒
               </div>
               <div>
-                <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: '1.2rem', textTransform: 'uppercase' }}>
-                  CHECKOUT & PAYMENT
+                <h2 style={{ margin: 0, fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
+                  Secure Payment Gateway
                 </h2>
-                <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: 'var(--yellow)' }}>
-                  100% SECURE ENCRYPTED TRANSACTION
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#CCFBF1', fontWeight: 500 }}>
+                  256-Bit Encrypted · Verified Merchant Checkout
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
               style={{
-                width: '40px',
-                height: '40px',
-                backgroundColor: 'var(--white)',
-                color: 'var(--black)',
-                border: '2px solid var(--black)',
-                fontWeight: 900,
-                fontSize: '1.2rem',
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                color: '#FFFFFF',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '1.1rem',
                 cursor: 'pointer',
-                boxShadow: '2px 2px 0px var(--black)'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
               }}
             >
               ✕
@@ -197,56 +208,56 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
             </div>
           ) : (
             /* Main Checkout Content */
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
               {/* Delivery & Kitchen Match */}
-              <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1rem', boxShadow: '3px 3px 0px var(--black)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontFamily: 'var(--font-display)', color: '#888', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-                  <span>DELIVERY DESTINATION & MATCHED KITCHEN</span>
-                  <span style={{ color: 'var(--green, #16a34a)' }}>✅ ZONE VERIFIED</span>
+              <div style={{ backgroundColor: '#FAF5EE', borderRadius: '16px', border: '1px solid #ECE7DF', padding: '1.2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, color: '#78716C', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+                  <span>Delivery & Matched Kitchen</span>
+                  <span style={{ color: '#16A34A' }}>✅ Zone Verified</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                  <div style={{ backgroundColor: 'var(--cream)', padding: '0.7rem', border: '2px solid var(--black)' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem', color: 'var(--red)', display: 'block' }}>DELIVERING TO:</span>
-                    <span style={{ fontWeight: 800, fontSize: '0.8rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deliveryLocation?.address || 'Connaught Place, New Delhi'}</span>
-                    <span style={{ fontSize: '0.65rem', color: '#888' }}>Label: {deliveryLocation?.label || 'HOME'}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '12px', border: '1px solid #E5E0D8' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--brand-primary)', display: 'block' }}>DELIVERING TO:</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deliveryLocation?.address || 'Connaught Place, New Delhi'}</span>
+                    <span style={{ fontSize: '0.72rem', color: '#78716C' }}>Label: {deliveryLocation?.label || 'HOME'}</span>
                   </div>
-                  <div style={{ backgroundColor: 'var(--cream)', padding: '0.7rem', border: '2px solid var(--black)' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem', color: 'var(--green, #16a34a)', display: 'block' }}>PREPARED BY:</span>
-                    <span style={{ fontWeight: 800, fontSize: '0.8rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nearestMatch.selectedKitchen.name}</span>
-                    <span style={{ fontSize: '0.65rem', color: '#888' }}>ETA: ~{nearestMatch.totalEtaMin} min ({nearestMatch.distanceKm} km)</span>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '12px', border: '1px solid #E5E0D8' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#16A34A', display: 'block' }}>PREPARED BY:</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nearestMatch.selectedKitchen.name}</span>
+                    <span style={{ fontSize: '0.72rem', color: '#78716C' }}>ETA: ~{nearestMatch.totalEtaMin} min ({nearestMatch.distanceKm} km)</span>
                   </div>
                 </div>
               </div>
 
               {/* Order Summary */}
-              <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1rem', boxShadow: '3px 3px 0px var(--black)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontFamily: 'var(--font-display)', color: '#888', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
-                  <span>ORDER SUMMARY ({cartItems.length} ITEMS)</span>
-                  <span style={{ color: 'var(--red)', fontWeight: 800 }}>GST INVOICE READY</span>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DF', padding: '1.2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, color: '#78716C', textTransform: 'uppercase', marginBottom: '0.6rem' }}>
+                  <span>Order Summary ({cartItems.length} items)</span>
+                  <span style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>GST Invoice</span>
                 </div>
-                <div style={{ borderBottom: '2px dashed #ccc', paddingBottom: '0.6rem', marginBottom: '0.6rem', maxHeight: '120px', overflowY: 'auto' }}>
+                <div style={{ borderBottom: '1px dashed #E5E0D8', paddingBottom: '0.6rem', marginBottom: '0.6rem', maxHeight: '120px', overflowY: 'auto' }}>
                   {cartItems.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, marginBottom: '0.3rem' }}>
-                      <span>{item.quantity}x {item.name}</span>
-                      <span>{formatINR(parsePrice(item.price))}</span>
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.35rem' }}>
+                      <span style={{ color: '#44403C' }}>{item.quantity}x {item.name}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--brand-dark)' }}>{formatINR(parsePrice(item.price))}</span>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Subtotal</span><span>{formatINR(subtotal)}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>GST Tax (5%)</span><span>{formatINR(gstAmount)}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Delivery Fee</span><span>{deliveryFee === 0 ? 'FREE 🚚' : formatINR(deliveryFee)}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontSize: '1.1rem', borderTop: '2px solid var(--black)', paddingTop: '0.4rem', marginTop: '0.3rem' }}>
-                    <span>GRAND TOTAL</span>
-                    <span style={{ color: 'var(--red)', fontWeight: 900, fontSize: '1.2rem' }}>{formatINR(grandTotal)}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.82rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#78716C' }}><span>Subtotal</span><span>{formatINR(subtotal)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#78716C' }}><span>GST Tax (5%)</span><span>{formatINR(gstAmount)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#78716C' }}><span>Delivery Fee</span><span>{deliveryFee === 0 ? 'FREE 🚚' : formatINR(deliveryFee)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem', borderTop: '1px solid #EFEAE2', paddingTop: '0.6rem', marginTop: '0.3rem', color: 'var(--brand-dark)' }}>
+                    <span>Grand Total</span>
+                    <span style={{ color: 'var(--brand-primary)', fontWeight: 800, fontSize: '1.25rem' }}>{formatINR(grandTotal)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Payment Method Tabs */}
-              <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1rem', boxShadow: '3px 3px 0px var(--black)' }}>
-                <div style={{ fontSize: '0.7rem', fontFamily: 'var(--font-display)', color: '#888', textTransform: 'uppercase', marginBottom: '0.8rem' }}>
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DF', padding: '1.2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#78716C', textTransform: 'uppercase', marginBottom: '0.8rem' }}>
                   SELECT PAYMENT METHOD
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -266,27 +277,27 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
 
                 {/* UPI QR Tab */}
                 {activeTab === 'upi_qr' && (
-                  <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
-                    <div style={{ border: '4px solid var(--black)', padding: '0.5rem', backgroundColor: 'var(--white)', boxShadow: '3px 3px 0px var(--black)' }}>
+                  <div style={{ backgroundColor: '#FAF5EE', borderRadius: '12px', border: '1px solid #ECE7DF', padding: '1.5rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem' }}>
+                    <div style={{ borderRadius: '12px', padding: '0.5rem', backgroundColor: '#FFFFFF', border: '1px solid #E5E0D8', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=upi://pay?pa=bigbites@upi&pn=BigBitesKitchen&am=${grandTotal}&cu=INR`}
                         alt="UPI QR Code"
                         style={{ width: '140px', height: '140px', objectFit: 'contain' }}
                       />
                     </div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--brand-dark)' }}>
                       SCAN WITH ANY UPI APP (GPAY, PHONEPE, PAYTM, CRED)
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                      Amount: <strong style={{ color: 'var(--red)' }}>₹{grandTotal}</strong> • Merchant: BigBites Kitchen
+                    <div style={{ fontSize: '0.75rem', color: '#78716C' }}>
+                      Amount: <strong style={{ color: 'var(--brand-primary)' }}>₹{grandTotal}</strong> • Merchant: BigBites Kitchen
                     </div>
                   </div>
                 )}
 
                 {/* UPI ID Tab */}
                 {activeTab === 'upi_id' && (
-                  <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem' }}>ENTER YOUR UPI VPA ID</label>
+                  <div style={{ backgroundColor: '#FAF5EE', borderRadius: '12px', border: '1px solid #ECE7DF', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#57534E' }}>ENTER YOUR UPI VPA ID</label>
                     <input
                       type="text"
                       value={upiIdInput}
@@ -294,14 +305,14 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                       placeholder="yourname@upi / 9876543210@paytm"
                       style={inputStyle}
                     />
-                    <p style={{ fontSize: '0.7rem', color: '#888', margin: 0 }}>We'll send a payment request to your UPI app.</p>
+                    <p style={{ fontSize: '0.75rem', color: '#78716C', margin: 0 }}>We'll send a payment request to your UPI app.</p>
                   </div>
                 )}
 
                 {/* Card Tab */}
                 {activeTab === 'card' && (
-                  <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem' }}>CARD NUMBER</label>
+                  <div style={{ backgroundColor: '#FAF5EE', borderRadius: '12px', border: '1px solid #ECE7DF', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#57534E' }}>CARD NUMBER</label>
                     <input
                       type="text"
                       value={cardDetails.number}
@@ -311,7 +322,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                     />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                       <div>
-                        <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem' }}>EXPIRY</label>
+                        <label style={{ fontSize: '0.68rem', fontWeight: 700, color: '#57534E' }}>EXPIRY</label>
                         <input
                           type="text"
                           value={cardDetails.expiry}
@@ -321,7 +332,7 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                         />
                       </div>
                       <div>
-                        <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem' }}>CVV</label>
+                        <label style={{ fontSize: '0.68rem', fontWeight: 700, color: '#57534E' }}>CVV</label>
                         <input
                           type="password"
                           value={cardDetails.cvv}
@@ -331,12 +342,12 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                         />
                       </div>
                       <div>
-                        <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.65rem' }}>NAME</label>
+                        <label style={{ fontSize: '0.68rem', fontWeight: 700, color: '#57534E' }}>NAME</label>
                         <input
                           type="text"
                           value={cardDetails.name}
                           onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                          placeholder="Name"
+                          placeholder="Name on card"
                           style={inputStyle}
                         />
                       </div>
@@ -346,12 +357,12 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
 
                 {/* COD Tab */}
                 {activeTab === 'cod' && (
-                  <div style={{ backgroundColor: '#FFFBEB', border: 'var(--border-thick)', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      ⚠️ CASH ON DELIVERY (COD) SELECTED
+                  <div style={{ backgroundColor: '#FFFBEB', borderRadius: '12px', border: '1px solid #FDE68A', padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#92400E', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      💵 CASH ON DELIVERY (COD) SELECTED
                     </div>
-                    <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#555', margin: 0 }}>
-                      Pay <strong style={{ color: 'var(--red)' }}>₹{grandTotal}</strong> in cash or scan driver QR code upon arrival at your doorstep.
+                    <p style={{ fontSize: '0.82rem', fontWeight: 500, color: '#78350F', margin: 0 }}>
+                      Pay <strong style={{ color: 'var(--brand-primary)' }}>₹{grandTotal}</strong> in cash or scan driver QR code upon arrival at your doorstep.
                     </p>
                   </div>
                 )}
@@ -363,9 +374,9 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
           {!processing && !paymentDone && (
             <div
               style={{
-                backgroundColor: 'var(--white)',
-                borderTop: '4px solid var(--black)',
-                padding: '1rem 1.5rem',
+                backgroundColor: '#FAFAF9',
+                borderTop: '1px solid #EFEAE2',
+                padding: '1.1rem 1.75rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -376,37 +387,43 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                 onClick={onClose}
                 style={{
                   width: '35%',
-                  padding: '0.9rem',
-                  backgroundColor: '#e5e5e5',
-                  color: 'var(--black)',
-                  border: 'var(--border-thick)',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.85rem',
+                  padding: '0.85rem',
+                  backgroundColor: '#FFFFFF',
+                  color: '#57534E',
+                  border: '1px solid #D6D3D1',
+                  borderRadius: '12px',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
                   cursor: 'pointer',
-                  boxShadow: '3px 3px 0px var(--black)'
+                  transition: 'all 0.2s ease'
                 }}
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 onClick={handlePayNow}
                 style={{
                   width: '65%',
-                  padding: '1rem',
-                  backgroundColor: 'var(--red)',
-                  color: 'var(--white)',
-                  border: 'var(--border-thick)',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1rem',
+                  padding: '0.85rem',
+                  backgroundColor: '#16A34A',
+                  backgroundImage: 'linear-gradient(135deg, #16A34A, #15803D)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
                   cursor: 'pointer',
-                  boxShadow: '4px 4px 0px var(--black)',
+                  boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.5rem'
+                  gap: '0.5rem',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <span>PAY ₹{grandTotal} NOW</span>
+                <span>Pay {formatINR(grandTotal)} Now</span>
                 <span>→</span>
               </button>
             </div>

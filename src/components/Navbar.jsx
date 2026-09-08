@@ -186,30 +186,88 @@ export default function Navbar({
             </button>
 
             {/* User Profile / Auth */}
-            <button
-              type="button"
-              onClick={onOpenAuth}
-              title={currentUser ? `Signed in as ${currentUser.full_name || 'User'}` : 'Sign In'}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--brand-dark)',
-                padding: '0.4rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.1rem',
-                transition: 'color 0.2s ease'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--brand-dark)')}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </button>
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                title={`Signed in as ${currentUser.full_name || currentUser.email || 'User'}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  backgroundColor: '#FFF7ED',
+                  border: '1px solid #FFEDD5',
+                  borderRadius: '9999px',
+                  padding: '0.3rem 0.75rem 0.3rem 0.35rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FFEDD5';
+                  e.currentTarget.style.borderColor = '#FED7AA';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FFF7ED';
+                  e.currentTarget.style.borderColor = '#FFEDD5';
+                }}
+              >
+                <div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--brand-primary)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.72rem',
+                    fontWeight: 800
+                  }}
+                >
+                  {currentUser.full_name ? currentUser.full_name[0].toUpperCase() : 'U'}
+                </div>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-dark)' }}>
+                  {currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Account'}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                title="Sign In"
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E5E0D8',
+                  borderRadius: '9999px',
+                  cursor: 'pointer',
+                  color: 'var(--brand-dark)',
+                  padding: '0.4rem 0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--brand-primary)';
+                  e.currentTarget.style.color = 'var(--brand-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#E5E0D8';
+                  e.currentTarget.style.color = 'var(--brand-dark)';
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Sign In</span>
+              </button>
+            )}
 
             {/* Cart Icon with Counter Badge */}
             <button
@@ -218,64 +276,57 @@ export default function Navbar({
               title="View Cart"
               style={{
                 position: 'relative',
-                background: 'none',
-                border: 'none',
+                background: '#FFFFFF',
+                border: '1px solid #E5E0D8',
+                borderRadius: '50%',
+                width: '38px',
+                height: '38px',
                 cursor: 'pointer',
                 color: 'var(--brand-dark)',
-                padding: '0.4rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'color 0.2s ease'
+                transition: 'all 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--brand-dark)')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--brand-primary)';
+                e.currentTarget.style.color = 'var(--brand-primary)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#E5E0D8';
+                e.currentTarget.style.color = 'var(--brand-dark)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="9" cy="21" r="1"></circle>
                 <circle cx="20" cy="21" r="1"></circle>
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
               </svg>
-              {cartCount > 0 ? (
+              {cartCount > 0 && (
                 <span
                   style={{
                     position: 'absolute',
-                    top: '-2px',
+                    top: '-4px',
                     right: '-4px',
                     backgroundColor: 'var(--brand-primary)',
                     color: '#FFFFFF',
                     fontSize: '0.65rem',
-                    fontWeight: 700,
-                    width: '18px',
+                    fontWeight: 800,
+                    minWidth: '18px',
                     height: '18px',
-                    borderRadius: '50%',
+                    padding: '0 4px',
+                    borderRadius: '9999px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 2px 5px rgba(200,69,35,0.4)'
+                    boxShadow: '0 2px 6px rgba(200,69,35,0.4)',
+                    border: '1.5px solid #FFFFFF'
                   }}
                 >
                   {cartCount}
-                </span>
-              ) : (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-2px',
-                    right: '-4px',
-                    backgroundColor: 'var(--brand-primary)',
-                    color: '#FFFFFF',
-                    fontSize: '0.6rem',
-                    fontWeight: 700,
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  0
                 </span>
               )}
             </button>
