@@ -8,6 +8,7 @@ import SellerLayout from './layouts/SellerLayout';
 import HomePage from './pages/HomePage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import DeliveryTrackingPage from './pages/DeliveryTrackingPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import RestaurantPage from './pages/RestaurantPage';
@@ -41,7 +42,6 @@ export default function App() {
               <Route path="cart" element={<CartPage />} />
               <Route path="checkout" element={<CheckoutPage />} />
               <Route path="order/:id" element={<OrderConfirmationPage />} />
-              <Route path="orders/:orderId/track" element={<OrderConfirmationPage />} />
               <Route path="restaurant/:id" element={<RestaurantPage />} />
               <Route
                 path="/dev/driver"
@@ -68,6 +68,9 @@ export default function App() {
                 }
               />
             </Route>
+
+            {/* Map-only delivery tracking: intentionally outside MainLayout. */}
+            <Route path="/orders/:orderId/track" element={<DeliveryTrackingPage />} />
 
             {/* Seller Auth Routes (No layout/sidebar) */}
             <Route path="/seller/login" element={<SellerLoginPage />} />
