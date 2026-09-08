@@ -4,6 +4,7 @@ import { marketplaceService } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import GoogleMapsView from '../components/GoogleMapsView';
 import { getGoogleMapsDirectionsUrl } from '../services/googleMapsLoader';
+import { formatINR } from '../utils/currency';
 
 export default function RestaurantPage() {
   const { id } = useParams();
@@ -176,7 +177,7 @@ export default function RestaurantPage() {
                             {item.is_veg ? '🟢 VEG' : '🔴 NON-VEG'}
                           </span>
                           <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 900 }}>
-                            ₹{item.price}
+                            {formatINR(item.price)}
                           </span>
                         </div>
                         <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', margin: '0.4rem 0' }}>

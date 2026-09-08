@@ -3,9 +3,9 @@ import FoodProductCard from './FoodProductCard';
 const NEW_ARRIVALS = [
   {
     id: 'na-1',
-    name: 'Cheesy Beef Burger',
-    description: 'Double patty, cheddar, house sauce',
-    price: 8.99,
+    name: 'Spicy Crispy Chicken Burger',
+    description: 'Crispy fried patty, aged cheddar, spicy peri-peri sauce',
+    price: 249,
     rating: '4.7',
     review_count: 84,
     prep_time: '12-15 min',
@@ -15,9 +15,9 @@ const NEW_ARRIVALS = [
   },
   {
     id: 'na-2',
-    name: 'Pepperoni Supreme',
-    description: 'Loaded pepperoni, mozzarella, basil',
-    price: 12.50,
+    name: 'Pepperoni Supreme Pizza',
+    description: 'Loaded spicy slices, melted mozzarella, fresh basil',
+    price: 449,
     rating: '4.8',
     review_count: 104,
     prep_time: '18-22 min',
@@ -28,8 +28,8 @@ const NEW_ARRIVALS = [
   {
     id: 'na-3',
     name: 'Crispy Wing Box',
-    description: '8pc spicy buffalo wings, ranch dip',
-    price: 9.99,
+    description: '8pc spicy tandoori glazed wings, mint dip',
+    price: 279,
     rating: '4.6',
     review_count: 312,
     prep_time: '15-18 min',
@@ -40,8 +40,8 @@ const NEW_ARRIVALS = [
   {
     id: 'na-4',
     name: 'Cold Brew Cooler',
-    description: 'Iced cold brew, vanilla foam',
-    price: 4.50,
+    description: 'South Indian iced cold brew, sweet vanilla cream',
+    price: 149,
     rating: '4.9',
     review_count: 45,
     prep_time: '5-8 min',

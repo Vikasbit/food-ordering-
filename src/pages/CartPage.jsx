@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { formatINR, parsePrice } from '../utils/currency';
 
 export default function CartPage() {
   const navigate = useNavigate();
   const { cartItems, handleRemoveItem, handleUpdateQuantity } = useCart();
 
   const subtotal = cartItems.reduce((acc, item) => {
-    const numericPrice = parseFloat(item.price?.toString().replace(/[^0-9.]/g, '')) || 0;
+    const numericPrice = parsePrice(item.price);
     return acc + numericPrice * (item.quantity || 1);
   }, 0);
 
@@ -53,7 +54,7 @@ export default function CartPage() {
                     {item.name}
                   </h4>
                   <div style={{ color: 'var(--red)', fontWeight: 700, marginTop: '0.5rem', fontSize: '1.1rem' }}>
-                    {String(item.price).includes('₹') ? item.price : `₹${String(item.price).replace(/[^0-9]/g, '')}`}
+                    {formatINR(parsePrice(item.price))}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -83,11 +84,36 @@ export default function CartPage() {
             ))}
           </div>
 
-          <div style={{ borderTop: 'var(--border-thick)', paddingTop: '2rem', marginTop: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', fontFamily: 'var(--font-display)', fontSize: '2rem' }}>
-              <span>SUBTOTAL</span>
-              <span style={{ color: 'var(--red)' }}>₹{subtotal.toFixed(0)}</span>
+          <div style={{ borderTop: 'var(--border-thick)', paddingTop: '1.5rem', marginTop: '1rem' }}>
+            {/* Bill Summary Breakdown */}
+            <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '4px 4px 0px var(--black)' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', margin: '0 0 1rem', fontSize: '1.4rem' }}>
+                BILL DETAILS
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '1rem', borderBottom: '1px dashed #ccc', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#555' }}>Food Subtotal</span>
+                  <span style={{ fontWeight: 700 }}>{formatINR(subtotal)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#555' }}>Delivery Fee</span>
+                  <span style={{ fontWeight: 700, color: (subtotal > 499 || subtotal === 0) ? 'var(--green)' : 'inherit' }}>
+                    {subtotal > 499 || subtotal === 0 ? 'FREE' : formatINR(39)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#555' }}>Estimated Tax (5% GST)</span>
+                  <span style={{ fontWeight: 700 }}>{formatINR(Math.round(subtotal * 0.05))}</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--font-display)', fontSize: '1.8rem' }}>
+                <span>GRAND TOTAL</span>
+                <span style={{ color: 'var(--red)' }}>
+                  {formatINR(subtotal + (subtotal > 499 || subtotal === 0 ? 0 : 39) + Math.round(subtotal * 0.05))}
+                </span>
+              </div>
             </div>
+
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button
                 onClick={() => navigate('/')}

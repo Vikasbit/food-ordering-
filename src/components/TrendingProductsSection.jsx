@@ -4,8 +4,8 @@ const TRENDING_PRODUCTS = [
   {
     id: 'tp-1',
     name: 'Spicy Chicken Sandwich',
-    description: 'Crispy fillet, spicy mayo, slaw',
-    price: 8.99,
+    description: 'Crispy fillet, spicy mayo, pickled slaw',
+    price: 249,
     rating: '4.7',
     review_count: 132,
     prep_time: '14-18 min',
@@ -16,8 +16,8 @@ const TRENDING_PRODUCTS = [
   {
     id: 'tp-2',
     name: 'Chicken Fry Bucket',
-    description: 'Smoky BBQ sauce, crispy chicken',
-    price: 9.50,
+    description: 'Crispy marinated drumsticks, mint garlic chutney',
+    price: 349,
     rating: '4.8',
     review_count: 211,
     prep_time: '14-18 min',
@@ -28,8 +28,8 @@ const TRENDING_PRODUCTS = [
   {
     id: 'tp-3',
     name: 'Garlic Bread Sticks',
-    description: 'Toasted, garlic butter, parmesan',
-    price: 5.00,
+    description: 'Toasted herbs, garlic butter, spiced herbs',
+    price: 139,
     rating: '4.5',
     review_count: 74,
     prep_time: '8-12 min',
@@ -40,8 +40,8 @@ const TRENDING_PRODUCTS = [
   {
     id: 'tp-4',
     name: 'Mango Lassi',
-    description: 'Fresh mango, yogurt, cardamom',
-    price: 4.50,
+    description: 'Fresh Alphonso mango, creamy thick yogurt, cardamom',
+    price: 119,
     rating: '4.8',
     review_count: 95,
     prep_time: '5-8 min',

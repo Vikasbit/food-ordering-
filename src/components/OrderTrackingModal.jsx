@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import GoogleMapsView from './GoogleMapsView';
 import { realtimeTracker } from '../services/realtimeTracker';
 import { findNearestServingKitchen } from '../services/deliveryZoneService';
+import { formatINR } from '../utils/currency';
 
 export default function OrderTrackingModal({
   isOpen,
@@ -370,7 +371,7 @@ export default function OrderTrackingModal({
                 {cartItems.map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                     <span>{item.quantity}x {item.name}</span>
-                    <span style={{ fontWeight: 800 }}>{item.price}</span>
+                    <span style={{ fontWeight: 800 }}>{formatINR(item.price)}</span>
                   </div>
                 ))}
               </div>

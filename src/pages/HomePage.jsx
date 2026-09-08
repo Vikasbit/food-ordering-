@@ -114,7 +114,7 @@ export default function HomePage() {
       handleAddToCart({
         id: product.id,
         name: product.name,
-        price: typeof product.price === 'number' ? `₹${product.price.toFixed(0)}` : product.price,
+        price: typeof product.price === 'number' ? product.price : parseFloat(String(product.price).replace(/[^0-9.]/g, '')) || 0,
         image: product.image || product.image_url,
         quantity: 1,
         restaurant_id: product.restaurant_id || 'kitchen-1',

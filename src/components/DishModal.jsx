@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatINR } from '../utils/currency';
 
 export default function DishModal({ dish, onClose, onAddToCart }) {
   if (!dish) return null;
@@ -90,7 +91,7 @@ export default function DishModal({ dish, onClose, onAddToCart }) {
         {/* Action Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--red)' }}>
-            {dish.price}
+            {formatINR(dish.price)}
           </span>
           <button
             onClick={() => {

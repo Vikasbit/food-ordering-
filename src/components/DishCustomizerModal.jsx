@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, Flame, Check, Utensils, MessageSquare } from 'lucide-react';
+import { formatINR, parsePrice } from '../utils/currency';
 
 const SPICE_LEVELS = [
   { id: 'mild', label: 'Mild 🌶️', desc: 'Gentle aromatic herbs & spices' },
@@ -10,15 +11,15 @@ const SPICE_LEVELS = [
 
 const PORTIONS = [
   { id: 'regular', label: 'Regular Size', extra: 0, desc: 'Standard single portion' },
-  { id: 'double', label: 'Double Size / Upgraded', extra: 3.50, desc: 'Extra meat & double cheese' },
-  { id: 'combo', label: 'Make It A Combo (+ Fries & Drink)', extra: 4.99, desc: 'Includes drink & crisp fries' }
+  { id: 'double', label: 'Double Size / Upgraded', extra: 79, desc: 'Extra meat & double cheese' },
+  { id: 'combo', label: 'Make It A Combo (+ Fries & Drink)', extra: 129, desc: 'Includes drink & crisp fries' }
 ];
 
 const EXTRAS_OPTIONS = [
-  { id: 'cheese', label: 'Melted Cheddar Cheese Slice', price: 1.50 },
-  { id: 'bacon', label: 'Crispy Smoked Bacon Rashers', price: 2.25 },
-  { id: 'sauce', label: 'House Truffle Garlic Aioli Dip', price: 0.99 },
-  { id: 'jalapenos', label: 'Pickled Fire Jalapeños', price: 0.85 }
+  { id: 'cheese', label: 'Melted Cheddar Cheese Slice', price: 39 },
+  { id: 'bacon', label: 'Crispy Smoked Bacon Rashers', price: 59 },
+  { id: 'sauce', label: 'House Truffle Garlic Aioli Dip', price: 29 },
+  { id: 'jalapenos', label: 'Pickled Fire Jalapeños', price: 19 }
 ];
 
 export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart }) {
@@ -30,7 +31,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
 
   if (!isOpen || !dish) return null;
 
-  const basePriceNum = parseFloat(dish.price?.toString().replace(/[^0-9.]/g, '') || '8.99');
+  const basePriceNum = typeof dish.price === 'number' ? dish.price : (parsePrice(dish.price) || 249);
   const portionDiff = PORTIONS.find(p => p.id === portion)?.extra || 0;
   const extrasTotal = selectedExtras.reduce((acc, extraId) => {
     const item = EXTRAS_OPTIONS.find(e => e.id === extraId);
@@ -57,7 +58,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
       ...dish,
       id: `${dish.id || dish.name}-${spiceLevel}-${portion}-${selectedExtras.join('-')}`,
       name: `${dish.name} (${portionObj?.label})`,
-      price: `$${unitPrice.toFixed(2)}`,
+      price: unitPrice,
       customizations: {
         spice: spiceObj?.label,
         portion: portionObj?.label,
@@ -182,7 +183,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
                   {dish.description || dish.desc}
                 </p>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--brand-primary)', marginTop: '0.35rem' }}>
-                  ${basePriceNum.toFixed(2)} Base Price
+                  {formatINR(basePriceNum)} Base Price
                 </div>
               </div>
             </div>
@@ -243,7 +244,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
                       <div style={{ fontSize: '0.72rem', color: '#78716C' }}>{p.desc}</div>
                     </div>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: p.extra > 0 ? 'var(--brand-primary)' : '#78716C' }}>
-                      {p.extra === 0 ? 'Standard' : `+$${p.extra.toFixed(2)}`}
+                      {p.extra === 0 ? 'Standard' : `+${formatINR(p.extra)}`}
                     </span>
                   </button>
                 ))}
@@ -296,7 +297,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
                         </span>
                       </div>
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-primary)' }}>
-                        +${extra.price.toFixed(2)}
+                        +{formatINR(extra.price)}
                       </span>
                     </button>
                   );
@@ -406,7 +407,7 @@ export default function DishCustomizerModal({ dish, isOpen, onClose, onAddToCart
               }}
             >
               <span>Add To Bag 🛍️</span>
-              <span>${totalPrice.toFixed(2)} →</span>
+              <span>{formatINR(totalPrice)} →</span>
             </button>
           </div>
         </motion.div>

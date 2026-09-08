@@ -70,14 +70,18 @@ serve(async (req) => {
 
     subtotal = Math.round(subtotal * 100) / 100
 
+    // Apply Coupon
     let discount = 0
     const normalizedCoupon = String(couponCode ?? '').trim().toUpperCase()
     if (normalizedCoupon) {
-      if (normalizedCoupon !== 'EAT50') throw new Error('Invalid coupon code. Use EAT50 for 50% off.')
+      if (normalizedCoupon !== 'EAT50' && normalizedCoupon !== 'BIGBITES50') {
+        throw new Error('Invalid coupon code. Use EAT50 for 50% off.')
+      }
       discount = Math.round(subtotal * 0.5 * 100) / 100
     }
 
-    const deliveryFee = subtotal > 30 ? 0 : 40
+    // Delivery fee: Free above ₹499, otherwise ₹39
+    const deliveryFee = subtotal > 499 ? 0 : 39
     const taxableAmount = Math.max(0, subtotal - discount)
     const tax = Math.round(taxableAmount * 0.05)
     const finalAmountRupees = Math.max(0, Math.round(taxableAmount + deliveryFee + tax))

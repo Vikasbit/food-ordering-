@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { orderService, driverService } from '../lib/supabase';
 import GoogleMapsView from '../components/GoogleMapsView';
 import { calculateDistance } from '../utils/geo';
+import { formatINR } from '../utils/currency';
 
 export default function OrderConfirmationPage() {
   const params = useParams();
@@ -344,9 +345,30 @@ export default function OrderConfirmationPage() {
                     {new Date(order.created_at || Date.now()).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#16A34A', backgroundColor: '#F0FDF4', padding: '0.2rem 0.6rem', borderRadius: '9999px' }}>
-                  ● Paid Securely
+                <span style={{ 
+                  fontSize: '0.78rem', 
+                  fontWeight: 700, 
+                  color: order.payment_method?.toUpperCase() === 'COD' ? '#D97706' : '#16A34A', 
+                  backgroundColor: order.payment_method?.toUpperCase() === 'COD' ? '#FEF3C7' : '#F0FDF4', 
+                  padding: '0.2rem 0.6rem', 
+                  borderRadius: '9999px' 
+                }}>
+                  ● {order.payment_method?.toUpperCase() === 'COD' ? 'Payment Pending' : 'Paid Securely'}
                 </span>
+              </div>
+
+              {/* Payment Details */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.8rem', paddingBottom: '0.8rem', borderBottom: '1px dashed #EFEAE2' }}>
+                <div>
+                  <span style={{ color: '#78716C', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>PAYMENT METHOD</span>
+                  <span style={{ fontWeight: 700, color: 'var(--brand-dark)' }}>{order.payment_method?.toUpperCase() === 'COD' ? 'Cash on Delivery' : 'UPI'}</span>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ color: '#78716C', display: 'block', fontSize: '0.75rem', fontWeight: 600 }}>PAYMENT STATUS</span>
+                  <span style={{ fontWeight: 700, color: order.payment_method?.toUpperCase() === 'COD' ? '#D97706' : '#16A34A' }}>
+                    {order.payment_method?.toUpperCase() === 'COD' ? 'Pending' : 'Paid'}
+                  </span>
+                </div>
               </div>
 
               {/* Items List */}
@@ -356,7 +378,7 @@ export default function OrderConfirmationPage() {
                   return (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
                       <span style={{ color: 'var(--brand-dark)' }}>{item.quantity || 1} × {item.name}</span>
-                      <span style={{ fontWeight: 700 }}>₹{(p * (item.quantity || 1)).toFixed(0)}</span>
+                      <span style={{ fontWeight: 700 }}>{formatINR(p * (item.quantity || 1))}</span>
                     </div>
                   );
                 })}
@@ -375,9 +397,9 @@ export default function OrderConfirmationPage() {
                   color: 'var(--brand-dark)'
                 }}
               >
-                <span>Total Paid:</span>
+                <span>Order Total:</span>
                 <span style={{ color: 'var(--brand-primary)' }}>
-                  ₹{Number(order.amount || order.subtotal || 0).toFixed(0)}
+                  {formatINR(Number(order.amount || order.grand_total || order.subtotal || 0))}
                 </span>
               </div>
             </div>

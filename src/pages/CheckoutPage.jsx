@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatINR, parsePrice } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -41,7 +42,7 @@ export default function CheckoutPage() {
   const calculatePreview = () => {
     let subtotal = 0;
     cartItems.forEach(item => {
-      const p = typeof item.rawPrice === 'number' ? item.rawPrice : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '') || '0');
+      const p = typeof item.rawPrice === 'number' ? item.rawPrice : parsePrice(item.price);
       subtotal += p * (item.quantity || 1);
     });
     
@@ -50,8 +51,8 @@ export default function CheckoutPage() {
       discount = subtotal * 0.5;
     }
     
-    const deliveryFee = subtotal > 30 ? 0 : 2.99;
-    const tax = Math.round((subtotal - discount) * 0.05 * 100) / 100;
+    const deliveryFee = subtotal > 499 ? 0 : 39;
+    const tax = Math.round((subtotal - discount) * 0.05);
     const total = Math.max(0, (subtotal - discount) + deliveryFee + tax);
     
     setBillPreview({
@@ -225,7 +226,7 @@ export default function CheckoutPage() {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
                 {cartItems.map((item) => {
-                  const p = typeof item.rawPrice === 'number' ? item.rawPrice : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '') || '0');
+                  const p = typeof item.rawPrice === 'number' ? item.rawPrice : parsePrice(item.price);
                   return (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -237,7 +238,7 @@ export default function CheckoutPage() {
                           <span style={{ fontSize: '0.8rem', color: '#78716C', display: 'block' }}>Qty: {item.quantity}</span>
                         </div>
                       </div>
-                      <span style={{ fontWeight: 700, color: 'var(--brand-dark)' }}>${(p * (item.quantity || 1)).toFixed(2)}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--brand-dark)' }}>{formatINR(p * (item.quantity || 1))}</span>
                     </div>
                   );
                 })}
@@ -302,30 +303,30 @@ export default function CheckoutPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', borderBottom: '1px solid #EFEAE2', paddingBottom: '1rem', marginBottom: '1rem', fontSize: '0.9rem', color: '#57534E' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Food Subtotal</span>
-                    <span>${billPreview.subtotal.toFixed(2)}</span>
+                    <span>{formatINR(billPreview.subtotal)}</span>
                   </div>
                   
                   {billPreview.discount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16A34A', fontWeight: 700 }}>
                       <span>Discount ({appliedCoupon?.code})</span>
-                      <span>−${billPreview.discount.toFixed(2)}</span>
+                      <span>−{formatINR(billPreview.discount)}</span>
                     </div>
                   )}
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Delivery Fee</span>
-                    <span>{billPreview.deliveryFee === 0 ? 'FREE' : `$${billPreview.deliveryFee.toFixed(2)}`}</span>
+                    <span>{billPreview.deliveryFee === 0 ? 'FREE' : formatINR(billPreview.deliveryFee)}</span>
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Estimated Tax</span>
-                    <span>${billPreview.tax.toFixed(2)}</span>
+                    <span>{formatINR(billPreview.tax)}</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.3rem', fontWeight: 800, color: 'var(--brand-dark)' }}>
                   <span>Grand Total:</span>
-                  <span style={{ color: 'var(--brand-primary)' }}>${billPreview.total.toFixed(2)}</span>
+                  <span style={{ color: 'var(--brand-primary)' }}>{formatINR(billPreview.total)}</span>
                 </div>
               </div>
             )}
@@ -377,7 +378,7 @@ export default function CheckoutPage() {
                 className="btn-primary"
                 style={{ width: '100%', padding: '1.1rem', fontSize: '1.1rem', marginTop: '0.5rem' }}
               >
-                {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : `Place Order & Pay via Razorpay (${billPreview?.total.toFixed(2)})`}
+                {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : `Place Order & Pay via UPI (${formatINR(billPreview?.total || 0)})`}
               </button>
             )}
 

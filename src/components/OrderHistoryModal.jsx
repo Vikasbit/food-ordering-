@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Printer, RotateCcw, FileText } from 'lucide-react';
+import { formatINR } from '../utils/currency';
 
 export default function OrderHistoryModal({ isOpen, onClose, orders, onReorder }) {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -63,7 +64,7 @@ export default function OrderHistoryModal({ isOpen, onClose, orders, onReorder }
                       <span className="text-xs font-bold text-gray-500">{order.date || 'Today, 2:15 PM'}</span>
                     </div>
                     <div className="font-black text-lg text-black">
-                      ₹{order.grandTotal || order.total || 340}
+                      {formatINR(order.grandTotal || order.total || 340)}
                     </div>
                   </div>
 
@@ -72,7 +73,7 @@ export default function OrderHistoryModal({ isOpen, onClose, orders, onReorder }
                     {order.items?.map((item, itemIdx) => (
                       <div key={itemIdx} className="flex justify-between">
                         <span>{item.quantity}x {item.name}</span>
-                        <span>{item.price}</span>
+                        <span>{formatINR(item.price)}</span>
                       </div>
                     ))}
                   </div>
@@ -163,7 +164,7 @@ export default function OrderHistoryModal({ isOpen, onClose, orders, onReorder }
                     <td className="p-2">{item.name}</td>
                     <td className="p-2 text-center text-gray-500">2106</td>
                     <td className="p-2 text-center">{item.quantity}</td>
-                    <td className="p-2 text-right">{item.price}</td>
+                    <td className="p-2 text-right">{formatINR(item.price)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -173,7 +174,7 @@ export default function OrderHistoryModal({ isOpen, onClose, orders, onReorder }
             <div className="space-y-1 text-xs font-bold text-right mb-6">
               <div className="flex justify-between">
                 <span>Subtotal Taxable Value:</span>
-                <span>₹{selectedReceipt.subtotal || 290}</span>
+                <span>{formatINR(selectedReceipt.subtotal || 290)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>CGST (2.5%):</span>

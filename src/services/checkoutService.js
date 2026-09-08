@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { parsePrice } from '../utils/currency';
 
 export const checkoutService = {
   
@@ -30,7 +31,7 @@ export const checkoutService = {
     
     for (const item of cartItems) {
       const dbItem = allValidItems.find(i => i.id === item.id) || item;
-      const itemPrice = typeof dbItem.price === 'number' ? dbItem.price : parseFloat(dbItem.price?.toString().replace(/[^0-9.]/g, '') || '8.99');
+      const itemPrice = typeof dbItem.price === 'number' ? dbItem.price : (parsePrice(dbItem.price) || 199);
       authoritativeSubtotal += (itemPrice * (item.quantity || 1));
     }
     
@@ -44,8 +45,10 @@ export const checkoutService = {
       }
     }
     
-    const deliveryFee = authoritativeSubtotal > 30 ? 0 : 2.99;
-    const tax = Math.round((authoritativeSubtotal - discount) * 0.05 * 100) / 100;
+    // Delivery fee: free above ₹499, otherwise ₹39
+    const deliveryFee = authoritativeSubtotal > 499 ? 0 : 39;
+    // 5% GST on food after discount
+    const tax = Math.round((authoritativeSubtotal - discount) * 0.05);
     const finalAmount = Math.max(0, (authoritativeSubtotal - discount) + deliveryFee + tax);
     
     const mockRazorpayOrderId = `order_${Math.random().toString(36).substring(2, 12)}`;
@@ -84,8 +87,8 @@ export const checkoutService = {
     }
     return {
       razorpayKeyId: 'rzp_test_mockkey123',
-      amount: Math.round(finalAmount * 100),
-      currency: 'USD',
+      amount: Math.round(finalAmount * 100), // Convert INR to paise for Razorpay
+      currency: 'INR',
       razorpayOrderId: mockRazorpayOrderId,
       bigbitesOrderId: mockOrderId
     };

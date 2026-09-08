@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { findNearestServingKitchen } from '../services/deliveryZoneService';
+import { formatINR, parsePrice } from '../utils/currency';
 
 export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], deliveryLocation, onPaymentSuccess }) {
   const [activeTab, setActiveTab] = useState('upi_qr');
@@ -14,12 +15,12 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
   const nearestMatch = findNearestServingKitchen(deliveryLocation?.lat, deliveryLocation?.lng);
 
   const subtotal = cartItems.reduce((acc, item) => {
-    const numericPrice = parseFloat(String(item.price).replace(/[^0-9.]/g, '')) || 0;
+    const numericPrice = parsePrice(item.price);
     return acc + numericPrice * (item.quantity || 1);
   }, 0);
 
   const gstAmount = Math.round(subtotal * 0.05);
-  const deliveryFee = subtotal >= 300 || subtotal === 0 ? 0 : 40;
+  const deliveryFee = subtotal >= 499 || subtotal === 0 ? 0 : 39;
   const grandTotal = subtotal + gstAmount + deliveryFee;
 
   const handlePayNow = () => {
@@ -228,17 +229,17 @@ export default function PaymentGatewayModal({ isOpen, onClose, cartItems = [], d
                   {cartItems.map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, marginBottom: '0.3rem' }}>
                       <span>{item.quantity}x {item.name}</span>
-                      <span>{String(item.price).includes('₹') ? item.price : `₹${String(item.price).replace(/[^0-9]/g, '')}`}</span>
+                      <span>{formatINR(parsePrice(item.price))}</span>
                     </div>
                   ))}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Subtotal</span><span>₹{subtotal}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>GST Tax (5%)</span><span>₹{gstAmount}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Delivery Fee</span><span>{deliveryFee === 0 ? 'FREE 🚚' : `₹${deliveryFee}`}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Subtotal</span><span>{formatINR(subtotal)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>GST Tax (5%)</span><span>{formatINR(gstAmount)}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666' }}><span>Delivery Fee</span><span>{deliveryFee === 0 ? 'FREE 🚚' : formatINR(deliveryFee)}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontSize: '1.1rem', borderTop: '2px solid var(--black)', paddingTop: '0.4rem', marginTop: '0.3rem' }}>
                     <span>GRAND TOTAL</span>
-                    <span style={{ color: 'var(--red)', fontWeight: 900, fontSize: '1.2rem' }}>₹{grandTotal}</span>
+                    <span style={{ color: 'var(--red)', fontWeight: 900, fontSize: '1.2rem' }}>{formatINR(grandTotal)}</span>
                   </div>
                 </div>
               </div>

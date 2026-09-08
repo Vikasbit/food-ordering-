@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { formatINR, parsePrice } from '../utils/currency';
 
 export default function CartDrawer({
   isOpen,
@@ -14,11 +15,11 @@ export default function CartDrawer({
   const activeItems = cartItems.length > 0 ? cartItems : items;
 
   const subtotal = activeItems.reduce((acc, item) => {
-    const numericPrice = typeof item.rawPrice === 'number' ? item.rawPrice : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '')) || 0;
+    const numericPrice = typeof item.rawPrice === 'number' ? item.rawPrice : parsePrice(item.price);
     return acc + numericPrice * (item.quantity || 1);
   }, 0);
 
-  const deliveryFee = subtotal > 30 || subtotal === 0 ? 0 : 2.99;
+  const deliveryFee = subtotal > 499 || subtotal === 0 ? 0 : 39;
   const grandTotal = subtotal + (subtotal > 0 ? deliveryFee : 0);
 
   const handleCheckout = () => {
@@ -173,7 +174,7 @@ export default function CartDrawer({
                   }}
                 >
                   {activeItems.map((item, idx) => {
-                    const priceNum = typeof item.rawPrice === 'number' ? item.rawPrice : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '')) || 0;
+                    const priceNum = typeof item.rawPrice === 'number' ? item.rawPrice : parsePrice(item.price);
                     return (
                       <div
                         key={item.id || idx}
@@ -205,7 +206,7 @@ export default function CartDrawer({
                             {item.name}
                           </h4>
                           <div style={{ color: 'var(--brand-primary)', fontWeight: 700, fontSize: '0.88rem' }}>
-                            ${priceNum.toFixed(2)}
+                            {formatINR(priceNum)}
                           </div>
                         </div>
 
@@ -292,12 +293,12 @@ export default function CartDrawer({
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#78716C', marginBottom: '0.4rem' }}>
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatINR(subtotal)}</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: '#78716C', marginBottom: '0.75rem' }}>
                   <span>Delivery Fee</span>
-                  <span>{deliveryFee === 0 ? 'FREE' : `$${deliveryFee.toFixed(2)}`}</span>
+                  <span>{deliveryFee === 0 ? 'FREE' : formatINR(deliveryFee)}</span>
                 </div>
 
                 <div
@@ -313,7 +314,7 @@ export default function CartDrawer({
                   }}
                 >
                   <span>Total</span>
-                  <span style={{ color: 'var(--brand-primary)' }}>${grandTotal.toFixed(2)}</span>
+                  <span style={{ color: 'var(--brand-primary)' }}>{formatINR(grandTotal)}</span>
                 </div>
 
                 <button

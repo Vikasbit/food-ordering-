@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MENU_CATEGORIES, MENU_ITEMS } from '../data/menu';
+import { formatINR } from '../utils/currency';
 
 export default function MenuSection({ onAddToCart, onOpenCart, onOpenExplore, onCustomizeDish }) {
   const [activeCategory, setActiveCategory] = useState('VEGETARIAN');
@@ -233,7 +234,7 @@ export default function MenuSection({ onAddToCart, onOpenCart, onOpenExplore, on
                           {item.name}
                         </h4>
                         <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--red)', whiteSpace: 'nowrap' }}>
-                          {item.price}
+                          {formatINR(item.price)}
                         </span>
                       </div>
                       <p style={{ fontSize: '0.95rem', color: '#444', fontWeight: 500, lineHeight: 1.4, marginBottom: '1rem' }}>

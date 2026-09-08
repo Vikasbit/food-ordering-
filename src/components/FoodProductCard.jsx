@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ImageWithFallback from './ImageWithFallback';
+import { formatINR } from '../utils/currency';
 
 export default function FoodProductCard({ product, onAddToCart, onOpenCustomize }) {
   const [isFavorite, setIsFavorite] = useState(false);
@@ -173,7 +174,7 @@ export default function FoodProductCard({ product, onAddToCart, onOpenCustomize 
               color: 'var(--brand-dark)'
             }}
           >
-            ${Number(product.price).toFixed(2)}
+            {formatINR(Number(product.price))}
           </span>
 
           <button

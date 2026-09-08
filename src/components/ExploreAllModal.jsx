@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MENU_CATEGORIES, MENU_ITEMS } from '../data/menu';
+import { formatINR } from '../utils/currency';
 
 export default function ExploreAllModal({ isOpen, onClose, onAddToCart }) {
   const [search, setSearch] = useState('');
@@ -300,7 +301,7 @@ export default function ExploreAllModal({ isOpen, onClose, onAddToCart }) {
                         {dish.name}
                       </h4>
                       <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'var(--red)', whiteSpace: 'nowrap', marginLeft: '0.5rem' }}>
-                        {dish.price}
+                        {formatINR(dish.price)}
                       </span>
                     </div>
 

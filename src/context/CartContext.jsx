@@ -58,6 +58,15 @@ export function CartProvider({ children }) {
     }
   };
 
+  /**
+   * Parse price to a clean number. Handles numeric, "₹329", "$12.99", etc.
+   */
+  const _parsePrice = (price) => {
+    if (typeof price === 'number') return price;
+    if (!price) return 0;
+    return parseFloat(String(price).replace(/[^0-9.]/g, '')) || 0;
+  };
+
   const handleAddToCart = (item) => {
     setCartItems((prev) => {
       const existingIndex = prev.findIndex((i) => i.id === item.id);
@@ -66,12 +75,12 @@ export function CartProvider({ children }) {
         copy[existingIndex].quantity += (item.quantity || 1);
         return copy;
       }
-      const rawPriceNum = typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '') || '0');
+      const rawPriceNum = _parsePrice(item.price);
       return [
         ...prev,
         {
           ...item,
-          price: typeof item.price === 'string' && item.price.startsWith('$') ? item.price : `$${rawPriceNum.toFixed(2)}`,
+          price: rawPriceNum,
           rawPrice: rawPriceNum,
           quantity: item.quantity || 1
         }
@@ -81,7 +90,7 @@ export function CartProvider({ children }) {
 
   const handleAddToCartFromRestaurant = (item, rest) => {
     setActiveCartRestaurant(rest);
-    const rawPriceNum = typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '') || '0');
+    const rawPriceNum = _parsePrice(item.price);
     setCartItems((prev) => {
       const existingIndex = prev.findIndex((i) => i.id === item.id);
       if (existingIndex > -1) {
@@ -89,14 +98,14 @@ export function CartProvider({ children }) {
         copy[existingIndex].quantity += 1;
         return copy;
       }
-      return [...prev, { ...item, price: `$${rawPriceNum.toFixed(2)}`, rawPrice: rawPriceNum, quantity: 1 }];
+      return [...prev, { ...item, price: rawPriceNum, rawPrice: rawPriceNum, quantity: 1 }];
     });
   };
 
   const handleClearAndAddToCart = (item, rest) => {
     setActiveCartRestaurant(rest);
-    const rawPriceNum = typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString().replace(/[^0-9.]/g, '') || '0');
-    setCartItems([{ ...item, price: `$${rawPriceNum.toFixed(2)}`, rawPrice: rawPriceNum, quantity: 1 }]);
+    const rawPriceNum = _parsePrice(item.price);
+    setCartItems([{ ...item, price: rawPriceNum, rawPrice: rawPriceNum, quantity: 1 }]);
   };
 
   const handleUpdateQuantity = (id, delta) => {

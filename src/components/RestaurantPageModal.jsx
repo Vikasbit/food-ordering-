@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ImageWithFallback from './ImageWithFallback';
+import { formatINR } from '../utils/currency';
 
 export default function RestaurantPageModal({
   isOpen,
@@ -233,7 +234,7 @@ export default function RestaurantPageModal({
                             {item.name}
                           </h4>
                           <span style={{ fontSize: '1.05rem', color: 'var(--brand-primary)', fontWeight: 800, display: 'block' }}>
-                            ₹{item.price}
+                            {formatINR(item.price)}
                           </span>
                           <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', color: '#78716C', lineHeight: '1.4' }}>
                             {item.description}

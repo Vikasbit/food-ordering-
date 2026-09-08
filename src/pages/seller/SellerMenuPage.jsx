@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { marketplaceService } from '../../lib/supabase';
 import { storageService } from '../../services/storageService';
+import { formatINR } from '../../utils/currency';
 
 export default function SellerMenuPage() {
   const { user } = useAuth();
@@ -228,7 +229,7 @@ export default function SellerMenuPage() {
                               {item.is_bestseller && <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--yellow)', padding: '0.1rem 0.3rem', border: '1px solid #111' }}>BESTSELLER</span>}
                             </h4>
                             <p style={{ margin: '0.2rem 0', fontSize: '0.85rem', color: '#555', maxWidth: '400px' }}>{item.description}</p>
-                            <div style={{ marginTop: '0.5rem', fontWeight: 'bold', color: 'var(--red)' }}>₹{item.price}</div>
+                            <div style={{ marginTop: '0.5rem', fontWeight: 'bold', color: 'var(--red)' }}>{formatINR(item.price)}</div>
                           </div>
                           
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>

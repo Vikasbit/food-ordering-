@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { formatINR } from '../utils/currency';
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -63,7 +64,7 @@ export default function OrdersPage() {
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>₹{order.amount}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{formatINR(order.amount)}</span>
                   </div>
                 </div>
                 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { marketplaceService, orderService } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { formatINR } from '../../utils/currency';
 
 export default function SellerOrdersPage() {
   const { user } = useAuth();
@@ -171,7 +172,7 @@ export default function SellerOrdersPage() {
                   </span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>₹{order.amount}</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{formatINR(order.amount)}</span>
                   <div style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 'bold' }}>
                     {order.payment_status}
                   </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { marketplaceService, orderService } from '../../lib/supabase';
 import GoogleMapsView from '../GoogleMapsView';
+import { formatINR } from '../../utils/currency';
 
 export default function SellerDashboardModal({ isOpen, onClose }) {
   const { user, logout } = useAuth();
@@ -243,7 +244,7 @@ export default function SellerDashboardModal({ isOpen, onClose }) {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.2rem', marginBottom: '2rem' }}>
                     <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', boxShadow: '4px 4px 0px var(--black)', padding: '1.2rem' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--red)', display: 'block' }}>TOTAL REVENUE</span>
-                      <h2 style={{ margin: '0.4rem 0 0', fontFamily: 'var(--font-display)', fontSize: '1.8rem' }}>₹{totalRevenue}</h2>
+                      <h2 style={{ margin: '0.4rem 0 0', fontFamily: 'var(--font-display)', fontSize: '1.8rem' }}>{formatINR(totalRevenue)}</h2>
                     </div>
 
                     <div style={{ backgroundColor: 'var(--white)', border: 'var(--border-thick)', boxShadow: '4px 4px 0px var(--black)', padding: '1.2rem' }}>
@@ -382,7 +383,7 @@ export default function SellerDashboardModal({ isOpen, onClose }) {
                           {cat.items?.map((item) => (
                             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem', border: '1px solid #ddd', backgroundColor: item.is_available ? '#fff' : '#f0f0f0' }}>
                               <div>
-                                <strong>{item.is_veg ? '🌱' : '🍗'} {item.name}</strong> • ₹{item.price}
+                                <strong>{item.is_veg ? '🌱' : '🍗'} {item.name}</strong> • {formatINR(item.price)}
                                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#666' }}>{item.description}</p>
                               </div>
 
@@ -420,7 +421,7 @@ export default function SellerDashboardModal({ isOpen, onClose }) {
                               <strong style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>#{ord.order_number}</strong>
                               <span style={{ marginLeft: '1rem', backgroundColor: 'var(--yellow)', padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontWeight: 800 }}>{ord.status}</span>
                             </div>
-                            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--red)' }}>₹{ord.grand_total}</span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--red)' }}>{formatINR(ord.grand_total)}</span>
                           </div>
 
                           <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>📍 <strong>Deliver to:</strong> {ord.delivery_address}</p>
@@ -429,7 +430,7 @@ export default function SellerDashboardModal({ isOpen, onClose }) {
                             {ord.items?.map((item, idx) => (
                               <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
                                 <span>{item.quantity}x {item.name}</span>
-                                <span>₹{item.price * item.quantity}</span>
+                                <span>{formatINR(item.price * item.quantity)}</span>
                               </div>
                             ))}
                           </div>
