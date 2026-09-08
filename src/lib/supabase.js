@@ -195,7 +195,26 @@ export const authService = {
           data: { full_name: cleanFullName, phone: cleanPhone, role: 'customer' }
         }
       });
-      if (error) throw error;
+      if (error) {
+        // If rate limited or user already registered, attempt direct login
+        try {
+          const directLogin = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+          if (directLogin.data?.session) {
+            return { user: directLogin.data.user, session: directLogin.data.session };
+          }
+        } catch (e) {
+          // Fall through
+        }
+
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('rate limit') || msg.includes('rate_limit')) {
+          throw new Error('Supabase email limit reached (free tier limit 3 emails/hr). Please turn OFF "Confirm email" in Supabase Dashboard (Auth -> Providers -> Email) to stop emails and allow instant signup.');
+        }
+        throw error;
+      }
 
       let session = data.session;
       let user = data.user;
@@ -260,7 +279,25 @@ export const authService = {
           data: { full_name: finalName, phone: cleanPhone, role: 'seller' }
         }
       });
-      if (error) throw error;
+      if (error) {
+        try {
+          const directLogin = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+          if (directLogin.data?.session) {
+            return { user: directLogin.data.user, session: directLogin.data.session };
+          }
+        } catch (e) {
+          // Fall through
+        }
+
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('rate limit') || msg.includes('rate_limit')) {
+          throw new Error('Supabase email limit reached. Please turn OFF "Confirm email" in Supabase Dashboard (Auth -> Providers -> Email) to allow unlimited instant signups without sending emails.');
+        }
+        throw error;
+      }
 
       let session = data.session;
       let user = data.user;
