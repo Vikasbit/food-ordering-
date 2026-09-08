@@ -13,7 +13,7 @@ export const checkoutService = {
   async createRazorpayOrder({ cartItems, restaurantId, couponCode, userId, paymentMethod = 'UPI' }) {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { cartItems, restaurantId, couponCode, userId }
+        body: { cartItems, restaurantId, couponCode, userId, paymentMethod }
       });
       if (error) throw error;
       return data;
@@ -115,7 +115,7 @@ export const checkoutService = {
 
     const delivAddress = deliveryLocation?.address || deliveryLocation?.formatted_address || 'Connaught Place, New Delhi';
     const delivLat = deliveryLocation?.latitude || deliveryLocation?.lat || 28.6315;
-    const delivLng = deliveryLocation?.longitude || deliveryLocation?.lng || 77.2167;
+    const delivLng = deliveryLocation?.longitude || deliveryLocation?.lng || 28.6315;
 
     // Snapshot immutable delivery coordinates on the order
     order.status = 'PENDING';
@@ -147,7 +147,7 @@ export const checkoutService = {
       delivery_latitude: delivLat,
       delivery_longitude: delivLng,
       current_latitude: order.restaurant_lat || 28.6315,
-      current_longitude: order.restaurant_lng || 77.2167,
+      current_longitude: order.restaurant_lng || 28.6315,
       heading: 0,
       speed: 0,
       last_location_update: new Date().toISOString(),
