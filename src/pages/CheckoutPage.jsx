@@ -97,12 +97,16 @@ export default function CheckoutPage() {
         } = await supabase.auth.getUser();
 
         if (authError || !authUser) {
-          throw new Error('Your login session is not active. Please log in again.');
+          alert('Your login session is not active. Please log in again.');
+          setLoading(false);
+          return;
         }
         orderUserId = authUser.id;
       } else {
         if (!user?.id) {
-          throw new Error('Your login session is not active. Please log in again.');
+          alert('Your login session is not active. Please log in again.');
+          setLoading(false);
+          return;
         }
         orderUserId = user.id;
       }

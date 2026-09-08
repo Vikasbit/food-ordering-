@@ -15,8 +15,8 @@ export function AuthProvider({ children }) {
     async function initializeAuth() {
       try {
         if (isSupabaseConfigured) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user && isMounted) {
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (session?.user && !sessionError && isMounted) {
             const profile = await authService.getCurrentUser();
             if (isMounted) setUser(profile);
           } else if (isMounted) {
@@ -39,11 +39,11 @@ export function AuthProvider({ children }) {
 
     if (isSupabaseConfigured) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session?.user) {
+        if (session?.user && isMounted) {
           const profile = await authService.getCurrentUser();
           if (isMounted) setUser(profile);
-        } else {
-          if (isMounted) setUser(null);
+        } else if (isMounted) {
+          setUser(null);
         }
       });
 
@@ -67,13 +67,12 @@ export function AuthProvider({ children }) {
   const signUpCustomer = async (details) => {
     const res = await authService.signUpCustomer(details);
     if (isSupabaseConfigured) {
-      const profile = await authService.getCurrentUser();
-      setUser(profile || (res.user ? {
-        id: res.user.id,
-        email: res.user.email,
-        role: 'customer',
-        full_name: details.fullName
-      } : null));
+      if (res?.session) {
+        const profile = await authService.getCurrentUser();
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
     } else {
       setUser(res.user);
     }
@@ -83,21 +82,16 @@ export function AuthProvider({ children }) {
   const signUpSeller = async (details) => {
     const res = await authService.signUpSeller(details);
     if (isSupabaseConfigured) {
-      const profile = await authService.getCurrentUser();
-      setUser(profile || (res.user ? {
-        id: res.user.id,
-        email: res.user.email,
-        role: 'seller',
-        full_name: details.fullName || details.ownerName
-      } : null));
+      if (res?.session) {
+        const profile = await authService.getCurrentUser();
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
     } else {
       setUser(res.user);
     }
     return res;
-  };
-
-  const resendConfirmationEmail = async (email) => {
-    return await authService.resendConfirmationEmail(email);
   };
 
   const logout = async () => {
@@ -120,7 +114,6 @@ export function AuthProvider({ children }) {
         login,
         signUpCustomer,
         signUpSeller,
-        resendConfirmationEmail,
         logout,
         addSavedAddress
       }}
