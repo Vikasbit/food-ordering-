@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatINR, parsePrice } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -23,9 +23,11 @@ export default function CheckoutPage() {
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [razorpayOrder, setRazorpayOrder] = useState(null);
   const [billPreview, setBillPreview] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [paymentMethod, setPaymentMethod] = useState('UPI'); // UPI or COD
+  const isOrderPlacedRef = useRef(false);
 
   useEffect(() => {
+    if (isOrderPlacedRef.current) return;
     if (!cartItems || cartItems.length === 0) {
       navigate('/');
       return;
@@ -118,12 +120,13 @@ export default function CheckoutPage() {
         userId: orderUserId,
         paymentMethod
       });
-
       // COD is a complete order-placement flow. Do NOT create, open, or show Razorpay.
       if (paymentMethod === 'COD') {
         if (orderResponse.paymentMethod !== 'COD') {
           throw new Error('COD order was not created correctly. Please try again.');
         }
+        // COD flow - directly consider order placed
+        isOrderPlacedRef.current = true;
         clearCart();
         navigate(`/orders/${orderResponse.orderId}/track`, {
           replace: true,
@@ -244,6 +247,7 @@ export default function CheckoutPage() {
                       cartItems
                     });
                     if (verification.success) {
+                      isOrderPlacedRef.current = true;
                       clearCart();
                       navigate(`/orders/${verification.orderId}/track`, { replace: true });
                     }

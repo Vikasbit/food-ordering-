@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CustomCursor from '../components/CustomCursor';
@@ -13,6 +13,7 @@ import { useCart } from '../context/CartContext';
 
 export default function MainLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { 
     cartItems, 
@@ -29,38 +30,45 @@ export default function MainLayout() {
   const [sellerAuthOpen, setSellerAuthOpen] = useState(false);
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
 
+  // The order tracking screen is a full-bleed mobile-first delivery interface
+  const isTrackingScreen = location.pathname.includes('/track');
+
   return (
     <div className="relative min-h-screen bg-[var(--cream)] text-[var(--black)] selection:bg-[var(--red)] selection:text-[var(--white)] overflow-x-hidden">
       <CustomCursor />
       
-      <Navbar
-        cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-        onOpenCart={() => setCartOpen(true)}
-        onOpenOrders={() => setOrderHistoryOpen(true)}
-        deliveryLocation={deliveryLocation}
-        onOpenLocationPicker={openLocationModal}
-        onOpenAuth={() => setCustomerAuthOpen(true)}
-        onOpenSellerPortal={() => {
+      {!isTrackingScreen && (
+        <Navbar
+          cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+          onOpenCart={() => setCartOpen(true)}
+          onOpenOrders={() => setOrderHistoryOpen(true)}
+          deliveryLocation={deliveryLocation}
+          onOpenLocationPicker={openLocationModal}
+          onOpenAuth={() => setCustomerAuthOpen(true)}
+          onOpenSellerPortal={() => {
+            if (user?.role === 'seller' || user?.role === 'admin') {
+              navigate('/seller/dashboard');
+            } else {
+              setSellerAuthOpen(true);
+            }
+          }}
+          currentUser={user}
+        />
+      )}
+
+      <main style={{ minHeight: isTrackingScreen ? '100vh' : 'calc(100vh - 400px)' }}>
+        <Outlet />
+      </main>
+
+      {!isTrackingScreen && (
+        <Footer onOpenSellerPortal={() => {
           if (user?.role === 'seller' || user?.role === 'admin') {
             navigate('/seller/dashboard');
           } else {
             setSellerAuthOpen(true);
           }
-        }}
-        currentUser={user}
-      />
-
-      <main style={{ minHeight: 'calc(100vh - 400px)' }}>
-        <Outlet />
-      </main>
-
-      <Footer onOpenSellerPortal={() => {
-        if (user?.role === 'seller' || user?.role === 'admin') {
-          navigate('/seller/dashboard');
-        } else {
-          setSellerAuthOpen(true);
-        }
-      }} />
+        }} />
+      )}
 
       {/* Global Modals */}
       <CartDrawer
