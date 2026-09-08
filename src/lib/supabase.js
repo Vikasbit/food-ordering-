@@ -147,7 +147,29 @@ export const authService = {
     if (isSupabaseConfigured) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return null;
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+      let { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+      
+      // Auto-provision profile if missing
+      if (!profile) {
+        const metadataRole = session.user.user_metadata?.role || 'customer';
+        const metadataName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '';
+        const metadataPhone = session.user.user_metadata?.phone || '';
+        try {
+          const { data: createdProfile } = await supabase.from('profiles').upsert([
+            {
+              id: session.user.id,
+              email: session.user.email,
+              full_name: metadataName,
+              phone: metadataPhone,
+              role: metadataRole
+            }
+          ]).select().maybeSingle();
+          if (createdProfile) profile = createdProfile;
+        } catch (e) {
+          console.warn('Auto-create profile in getCurrentUser:', e);
+        }
+      }
+
       return profile || {
         id: session.user.id,
         email: session.user.email,
@@ -160,17 +182,25 @@ export const authService = {
   },
 
   async signUpCustomer({ email, password, fullName, phone }) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+    const cleanFullName = (fullName || '').trim();
+    const cleanPhone = (phone || '').trim();
+
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: fullName, phone, role: 'customer' } }
+        email: cleanEmail,
+        password: cleanPassword,
+        options: {
+          data: { full_name: cleanFullName, phone: cleanPhone, role: 'customer' },
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+        }
       });
       if (error) throw error;
       if (data.user && data.session) {
         try {
           await supabase.from('profiles').upsert([
-            { id: data.user.id, email, full_name: fullName, phone, role: 'customer' }
+            { id: data.user.id, email: cleanEmail, full_name: cleanFullName, phone: cleanPhone, role: 'customer' }
           ]);
         } catch (e) {
           console.warn('Profile sync warning:', e);
@@ -180,15 +210,15 @@ export const authService = {
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
+    if (users.find((u) => u.email.toLowerCase() === cleanEmail)) {
       throw new Error('An account with this email already exists.');
     }
     const newUser = {
       id: `user-${Date.now()}`,
-      email,
-      password,
-      full_name: fullName,
-      phone,
+      email: cleanEmail,
+      password: cleanPassword,
+      full_name: cleanFullName,
+      phone: cleanPhone,
       role: 'customer'
     };
     users.push(newUser);
@@ -198,19 +228,26 @@ export const authService = {
   },
 
   async signUpSeller({ fullName, ownerName, email, phone, password, restaurantName, address, city, cuisine, openingHours }) {
-    const finalName = fullName || ownerName || 'Seller';
+    const finalName = (fullName || ownerName || 'Seller').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+    const cleanPhone = (phone || '').trim();
+
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: finalName, phone, role: 'seller' } }
+        email: cleanEmail,
+        password: cleanPassword,
+        options: {
+          data: { full_name: finalName, phone: cleanPhone, role: 'seller' },
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+        }
       });
       if (error) throw error;
 
       if (data.user && data.session) {
         try {
           await supabase.from('profiles').upsert([
-            { id: data.user.id, email, full_name: finalName, phone, role: 'seller' }
+            { id: data.user.id, email: cleanEmail, full_name: finalName, phone: cleanPhone, role: 'seller' }
           ]);
 
           if (restaurantName) {
@@ -223,7 +260,7 @@ export const authService = {
               lat: 28.6315,
               lng: 77.2167,
               cuisine: cuisine || 'Indian Street Food',
-              phone: phone || '',
+              phone: cleanPhone || '',
               opening_hours: openingHours || '10:00 AM - 11:00 PM',
               delivery_radius_km: 12,
               status: 'active',
@@ -240,15 +277,15 @@ export const authService = {
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    if (users.find((u) => u.email.toLowerCase() === email.toLowerCase())) {
+    if (users.find((u) => u.email.toLowerCase() === cleanEmail)) {
       throw new Error('An account with this email already exists.');
     }
     const newSeller = {
       id: `seller-${Date.now()}`,
-      email,
-      password,
+      email: cleanEmail,
+      password: cleanPassword,
       full_name: finalName,
-      phone,
+      phone: cleanPhone,
       role: 'seller'
     };
     users.push(newSeller);
@@ -259,10 +296,47 @@ export const authService = {
   },
 
   async login({ email, password }) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPassword
+      });
+
+      if (error) {
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+          const customErr = new Error('Email not confirmed. Please verify your email inbox or disable "Confirm email" in Supabase.');
+          customErr.isEmailNotConfirmed = true;
+          throw customErr;
+        }
+        throw error;
+      }
+
+      // Check if profile exists; if not (e.g. account was registered when email confirmation was required), create it now
+      let { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+      if (!profile) {
+        const metadataRole = data.user.user_metadata?.role || 'customer';
+        const metadataName = data.user.user_metadata?.full_name || cleanEmail.split('@')[0];
+        const metadataPhone = data.user.user_metadata?.phone || '';
+        try {
+          const { data: createdProfile } = await supabase.from('profiles').upsert([
+            {
+              id: data.user.id,
+              email: data.user.email,
+              full_name: metadataName,
+              phone: metadataPhone,
+              role: metadataRole
+            }
+          ]).select().maybeSingle();
+          if (createdProfile) profile = createdProfile;
+        } catch (e) {
+          console.warn('Auto profile creation on login:', e);
+        }
+      }
+
       return profile || {
         id: data.user.id,
         email: data.user.email,
@@ -272,12 +346,31 @@ export const authService = {
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
-    const matched = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+    const matched = users.find((u) => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
     if (!matched) {
       throw new Error('Invalid email or password. Please try again.');
     }
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(matched));
     return matched;
+  },
+
+  async resendConfirmationEmail(email) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new Error('Please enter your email address to resend confirmation link.');
+    }
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+        }
+      });
+      if (error) throw error;
+      return true;
+    }
+    return true;
   },
 
   async logout() {

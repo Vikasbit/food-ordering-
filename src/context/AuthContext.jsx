@@ -95,6 +95,10 @@ export function AuthProvider({ children }) {
     return res;
   };
 
+  const resendConfirmationEmail = async (email) => {
+    return await authService.resendConfirmationEmail(email);
+  };
+
   const logout = async () => {
     await authService.logout();
     setUser(null);
@@ -115,6 +119,7 @@ export function AuthProvider({ children }) {
         login,
         signUpCustomer,
         signUpSeller,
+        resendConfirmationEmail,
         logout,
         addSavedAddress
       }}

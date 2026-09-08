@@ -3,27 +3,53 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SellerLoginPage() {
-  const { login } = useAuth();
+  const { login, resendConfirmationEmail } = useAuth();
   const navigate = useNavigate();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError('Please enter your email address to resend the confirmation link.');
+      return;
+    }
+    setIsResending(true);
+    try {
+      await resendConfirmationEmail(email);
+      setSuccess(`Confirmation email resent to ${email}! Please check your inbox and spam folder.`);
+      setIsEmailNotConfirmed(false);
+    } catch (err) {
+      setError(err.message || 'Failed to resend confirmation email.');
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
+    setIsEmailNotConfirmed(false);
     setLoading(true);
     
     try {
       const user = await login(email, password);
       if (user.role === 'customer') {
-        throw new Error('This account is registered as a customer. Please use the customer login.');
+        throw new Error('This account is registered as a customer. Please use the customer login or register as a partner.');
       }
       navigate('/seller/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      const msg = err.message || 'Login failed. Please check your credentials.';
+      setError(msg);
+      if (err.isEmailNotConfirmed || msg.toLowerCase().includes('email not confirmed')) {
+        setIsEmailNotConfirmed(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -38,9 +64,39 @@ export default function SellerLoginPage() {
           </h1>
           <p style={{ margin: '0 0 2rem', opacity: 0.8 }}>Log in to your seller dashboard.</p>
           
+          {success && (
+            <div style={{ backgroundColor: '#D4EDDA', color: '#155724', padding: '1rem', border: '1px solid #111', marginBottom: '1.5rem', fontSize: '0.9rem', fontWeight: 700 }}>
+              ✅ {success}
+            </div>
+          )}
+
           {error && (
             <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '1rem', border: '1px solid #c62828', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              {error}
+              <div style={{ fontWeight: 700, marginBottom: isEmailNotConfirmed ? '0.5rem' : 0 }}>
+                ⚠️ {error}
+              </div>
+              {isEmailNotConfirmed && (
+                <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px dashed #c62828' }}>
+                  <button
+                    type="button"
+                    disabled={isResending}
+                    onClick={handleResendConfirmation}
+                    className="btn-editorial"
+                    style={{
+                      backgroundColor: 'var(--black)',
+                      color: 'var(--cream)',
+                      padding: '0.4rem 0.8rem',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isResending ? 'RESENDING LINK...' : '✉️ RESEND VERIFICATION EMAIL'}
+                  </button>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', opacity: 0.9, lineHeight: 1.35, color: '#333' }}>
+                    <strong>Supabase Tip:</strong> In your Supabase Dashboard, go to <em>Authentication → Providers → Email</em> and toggle off <strong>Confirm email</strong>.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
