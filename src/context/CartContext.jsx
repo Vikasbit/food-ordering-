@@ -138,7 +138,16 @@ export function CartProvider({ children }) {
         // ignore
       }
     }
-    setCartItems([]);
+
+    // During checkout, defer clearing the visible cart by one tick so the
+    // router can move to the order tracking page before CheckoutPage's
+    // empty-cart guard runs. Other callers still clear immediately.
+    if (typeof window !== 'undefined' && window.location.pathname === '/checkout') {
+      window.setTimeout(() => setCartItems([]), 0);
+    } else {
+      setCartItems([]);
+    }
+
     setActiveCartRestaurant(null);
   };
 
