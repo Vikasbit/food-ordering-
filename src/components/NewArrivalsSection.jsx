@@ -40,8 +40,8 @@ const NEW_ARRIVALS = [
   {
     id: 'na-4',
     name: 'Cold Brew Cooler',
-    description: 'South Indian iced cold brew, sweet vanilla cream',
-    price: 149,
+    description: 'South Indian iced cold brew, sweet vanilla cream float',
+    price: 209,
     rating: '4.9',
     review_count: 45,
     prep_time: '5-8 min',

@@ -31,7 +31,7 @@ export const checkoutService = {
     
     for (const item of cartItems) {
       const dbItem = allValidItems.find(i => i.id === item.id) || item;
-      const itemPrice = typeof dbItem.price === 'number' ? dbItem.price : (parsePrice(dbItem.price) || 199);
+      const itemPrice = typeof dbItem.price === 'number' ? dbItem.price : (parsePrice(dbItem.price) || 249);
       authoritativeSubtotal += (itemPrice * (item.quantity || 1));
     }
     

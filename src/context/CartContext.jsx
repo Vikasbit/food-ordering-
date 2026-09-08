@@ -60,11 +60,16 @@ export function CartProvider({ children }) {
 
   /**
    * Parse price to a clean number. Handles numeric, "₹329", "$12.99", etc.
+   * Automatically normalizes legacy/stale prices into 200-500 INR range.
    */
   const _parsePrice = (price) => {
-    if (typeof price === 'number') return price;
-    if (!price) return 0;
-    return parseFloat(String(price).replace(/[^0-9.]/g, '')) || 0;
+    let num = typeof price === 'number' ? price : (parseFloat(String(price || '').replace(/[^0-9.]/g, '')) || 0);
+    if (num > 0 && num < 200) {
+      if (num <= 15) num = Math.round(num * 25 + 124);
+      else num = Math.round(num * 2.6 + 60);
+      num = Math.max(209, Math.min(499, Math.round(num)));
+    }
+    return num || 249;
   };
 
   const handleAddToCart = (item) => {

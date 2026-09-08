@@ -26,14 +26,72 @@ const STORAGE_KEYS = {
   ADDRESSES: 'bigbites_db_addresses'
 };
 
-// Initialize Mock Store if empty
+// Store version key to automatically refresh client cache when prices or seed data update
+export const BIGBITES_STORE_VERSION = 'v7_inr_range_200_500_fixed';
+
+/**
+ * Sanitizes restaurant data so every food item price strictly falls within
+ * realistic Indian restaurant prices (₹200 to ₹500).
+ */
+export function sanitizeRestaurantPrices(restaurant) {
+  if (!restaurant) return restaurant;
+  const categories = (restaurant.categories || []).map(cat => ({
+    ...cat,
+    items: (cat.items || []).map(item => {
+      let price = Number(item.price);
+      if (isNaN(price) || price < 200 || price > 500) {
+        // Specific checks for known legacy USD or low-rupee mock items
+        if (item.name && item.name.includes('Royal Maharaja')) {
+          price = 349;
+        } else if (price <= 15) {
+          // Old USD values like 9.00 -> 349, 10.00 -> 370
+          price = Math.round(price * 25 + 124);
+        } else if (price < 100) {
+          price = Math.round(price * 2.6 + 60);
+        } else if (price < 200) {
+          price = price + 100;
+        }
+        // Strictly clamp within ₹200 to ₹500 range (e.g. ₹209 - ₹499)
+        price = Math.max(209, Math.min(499, Math.round(price)));
+      }
+      return {
+        ...item,
+        price
+      };
+    })
+  }));
+  return {
+    ...restaurant,
+    categories
+  };
+}
+
+// Initialize Mock Store if empty or outdated
 function initializeMockStore() {
-  const existingRests = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
+  const currentVersion = localStorage.getItem('bigbites_store_version');
+  let existingRests = [];
+  try {
+    existingRests = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
+  } catch (e) {
+    existingRests = [];
+  }
+
+  // Check if any restaurant item currently has prices below 200 (like old ₹9 or ₹10 entries)
+  const hasOutdatedPrices = !existingRests.length || existingRests.some(r =>
+    (r.categories || []).some(c =>
+      (c.items || []).some(it => Number(it.price) < 200 || Number(it.price) > 500)
+    )
+  );
+
   const hasAllRests = existingRests.length >= SEED_RESTAURANTS.length &&
     existingRests.some(r => r.city === 'VADODARA') &&
     existingRests.some(r => r.id === 'rest-vadodara-alkapuri');
-  if (!existingRests || !hasAllRests) {
-    localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(SEED_RESTAURANTS));
+
+  // If cached data has low prices (e.g. ₹9) or outdated version, overwrite with clean 200-500 INR data
+  if (!hasAllRests || hasOutdatedPrices || currentVersion !== BIGBITES_STORE_VERSION) {
+    const cleanRests = SEED_RESTAURANTS.map(sanitizeRestaurantPrices);
+    localStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(cleanRests));
+    localStorage.setItem('bigbites_store_version', BIGBITES_STORE_VERSION);
   }
   if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
     const demoUsers = [
@@ -246,21 +304,36 @@ export const marketplaceService = {
   },
 
   async getAllRestaurants() {
+    let list = [];
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('restaurants').select('*, menu_categories(*, menu_items(*))').eq('status', 'active');
-      if (!error && data && data.length > 0) return data;
+      if (!error && data && data.length > 0) list = data;
     }
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
+    if (!list || !list.length) {
+      try {
+        list = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
+      } catch (e) {
+        list = [];
+      }
+    }
+    if (!list || !list.length) {
+      list = SEED_RESTAURANTS;
+    }
+    // Always sanitize each restaurant so no item is ever below ₹200 or above ₹500
+    const sanitized = list.map(sanitizeRestaurantPrices);
+    return sanitized;
   },
 
   async getRestaurantById(id) {
     const all = await this.getAllRestaurants();
-    return all.find((r) => r.id === id || r.slug === id) || all[0];
+    const found = all.find((r) => r.id === id || r.slug === id) || all[0];
+    return sanitizeRestaurantPrices(found);
   },
 
   async getSellerRestaurant(sellerId) {
-    const all = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESTAURANTS) || '[]');
-    return all.find((r) => r.seller_id === sellerId) || null;
+    const all = await this.getAllRestaurants();
+    const found = all.find((r) => r.seller_id === sellerId) || null;
+    return sanitizeRestaurantPrices(found);
   },
 
   async updateSellerRestaurant(restaurantId, updatedFields) {

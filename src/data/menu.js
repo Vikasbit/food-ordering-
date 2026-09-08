@@ -32,7 +32,7 @@ export const SIGNATURE_DISHES = [
     hindiName: 'भेल पूरी',
     name: 'BHEL PURI',
     category: 'Chaats',
-    price: 129,
+    price: 219,
     description: 'PUFFED RICE, TAMARIND CHUTNEY, RAW MANGO, POMEGRANATE & CRISPY SEV CRUNCH.',
     image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80',
     bgColor: 'var(--red)',
@@ -111,7 +111,7 @@ export const MENU_ITEMS = {
       name: 'Samosa Chaat',
       hindiName: 'समोसा चाट',
       desc: 'Crushed potato samosa topped with spiced chickpea ragda, yogurt, and chutneys.',
-      price: 129,
+      price: 219,
       isVeg: true,
       image: 'https://cdn.mygingergarlickitchen.com/images/800px/800px-samosa-chaat-4.jpg'
     },
@@ -127,7 +127,7 @@ export const MENU_ITEMS = {
       name: 'Pani Puri Bombs',
       hindiName: 'पानी पूरी',
       desc: 'Crispy hollow puris filled with spiced potato mash and spicy mint tamarind water.',
-      price: 99,
+      price: 209,
       isVeg: true,
       image: 'https://www.ohmyveg.co.uk/wp-content/uploads/2023/07/Dahi-Puri-1-768x1024.jpg'
     },
@@ -135,7 +135,7 @@ export const MENU_ITEMS = {
       name: 'Dahi Bhalla',
       hindiName: 'दही भल्ला',
       desc: 'Soft lentil dumplings soaked in sweet curd, sprinkled with roasted cumin and pomegranate.',
-      price: 149,
+      price: 229,
       isVeg: true,
       image: 'https://www.teaforturmeric.com/wp-content/uploads/2022/04/Dahi-Bhalla-11-728x1092.jpg'
     },
@@ -143,7 +143,7 @@ export const MENU_ITEMS = {
       name: 'Aloo Tikki Ragda',
       hindiName: 'आलू टिक्की रगड़ा',
       desc: 'Golden pan-fried potato patties served over white pea gravy with spicy sweet chutneys.',
-      price: 119,
+      price: 219,
       isVeg: true,
       image: 'https://www.jcookingodyssey.com/wp-content/uploads/2025/12/Aloo-Tikki.jpg'
     }
@@ -151,26 +151,26 @@ export const MENU_ITEMS = {
 
   'BREADS & RICE': [
     {
-      name: 'Garlic Butter Naan',
+      name: 'Garlic Butter Naan Basket',
       hindiName: 'गार्लिक बटर नान',
       desc: 'Tandoor-baked flatbread brushed with garlic butter and fresh coriander.',
-      price: 69,
+      price: 209,
       isVeg: true,
       image: 'https://www.swankyrecipes.com/wp-content/uploads/2021/03/Buttery-Garlic-Naan.jpg'
     },
     {
-      name: 'Laccha Paratha',
+      name: 'Laccha Paratha Platter',
       hindiName: 'लच्छा पराठा',
       desc: 'Multi-layered crispy whole wheat bread baked in clay tandoor oven.',
-      price: 59,
+      price: 209,
       isVeg: true,
       image: 'https://i2.wp.com/www.vegrecipesofindia.com/wp-content/uploads/2010/06/lachha-paratha.jpg'
     },
     {
-      name: 'Cheese Chili Naan',
+      name: 'Cheese Chili Naan Basket',
       hindiName: 'चीज़ मिर्ची नान',
       desc: 'Soft naan stuffed with molten mozzarella, green chillies, and oregano.',
-      price: 89,
+      price: 229,
       isVeg: true,
       image: 'https://cdn.tischwelt.de/chameleon/mediapool/thumbs/a/9d/chili_cheese_naan_2_1000x600-ID390377-af3892cb585ec1585ffbef97f18069a5.webp'
     },
@@ -183,10 +183,10 @@ export const MENU_ITEMS = {
       image: 'https://img.magnific.com/premium-photo/dum-handi-chicken-biryani-is-prepared-earthen-clay-pot-called-haandi-popular-indian-non-vegetarian-food_466689-52384.jpg?semt=ais_test_b&w=740&q=80'
     },
     {
-      name: 'Jeera Rice',
+      name: 'Jeera Rice Special',
       hindiName: 'जीरा राइस',
       desc: 'Fragrant basmati rice tempered with ghee, cumin seeds, and green cardamom.',
-      price: 149,
+      price: 209,
       isVeg: true,
       image: 'https://cdn.create.vista.com/api/media/small/391548594/stock-photo-cumin-rice-jeera-rice-popular-indian-main-course-item-made'
     }
@@ -194,34 +194,34 @@ export const MENU_ITEMS = {
 
   'DESSERTS & DRINKS': [
     {
-      name: 'Gulab Jamun',
+      name: 'Gulab Jamun Royal Bowl',
       hindiName: 'गुलाब जामुन',
       desc: 'Warm milk-solid dumplings soaked in cardamom and rose water sugar syrup.',
-      price: 99,
+      price: 209,
       isVeg: true,
       image: 'https://img.magnific.com/premium-photo/gulab-jamun-bowl-copper-antique-bowl-with-spoon-indian-dessert-sweet-dish_926199-2408784.jpg?semt=ais_hybrid&w=740&q=80'
     },
     {
-      name: 'Mango Kulfi',
+      name: 'Mango Kulfi Platter',
       hindiName: 'मैंगो कुल्फी',
       desc: 'Traditional Indian frozen dessert made with Alphonso mango pulp and thickened milk.',
-      price: 119,
+      price: 219,
       isVeg: true,
       image: 'https://www.cookshideout.com/wp-content/uploads/2010/09/Mango-Kulfi4S.jpg'
     },
     {
-      name: 'Mango Lassi',
+      name: 'Mango Lassi Special',
       hindiName: 'मैंगो लस्सी',
       desc: 'Chilled creamy yogurt drink blended with fresh mangoes and cardamom.',
-      price: 89,
+      price: 209,
       isVeg: true,
       image: 'https://thumbs.dreamstime.com/b/mango-lassi-cardamom-29546849.jpg'
     },
     {
-      name: 'Masala Chai',
+      name: 'Masala Chai Kettle',
       hindiName: 'मसाला चाय',
       desc: 'Traditional Indian spiced tea brewed with ginger, cardamom, cloves, and whole milk.',
-      price: 49,
+      price: 209,
       isVeg: true,
       image: 'https://i.pinimg.com/originals/d2/f4/4e/d2f44e914953834cd4784f8497f8bee6.jpg'
     }
