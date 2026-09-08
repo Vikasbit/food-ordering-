@@ -41,9 +41,14 @@ export function AuthProvider({ children }) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_OUT' || !session?.user) {
           if (isMounted) setUser(null);
-        } else if (session?.user) {
-          const profile = await authService.getCurrentUser();
-          if (isMounted) setUser(profile);
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || session?.user) {
+          try {
+            const profile = await authService.getCurrentUser();
+            if (isMounted) setUser(profile);
+          } catch (e) {
+            console.error('Failed to load profile on auth state change:', e);
+            if (isMounted) setUser(null);
+          }
         }
       });
 

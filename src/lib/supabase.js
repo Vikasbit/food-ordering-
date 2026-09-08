@@ -198,21 +198,25 @@ export const authService = {
         }
       });
       if (error) {
-        const msg = error.message || '';
-        if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already exists')) {
           throw new Error('An account with this email already exists. Please log in.');
+        } else if (msg.includes('network') || msg.includes('fetch')) {
+          throw new Error('Unable to connect to the authentication service. Please try again.');
+        } else if (msg.includes('password')) {
+          throw new Error('Password must be at least 6 characters.');
         }
-        throw error;
+        throw new Error('Unable to create your account. Please try again.');
       }
 
       // Obtain the authenticated Supabase session
-      let session = data.session;
+      let session = data?.session;
       if (!session) {
         const { data: sessionData } = await supabase.auth.getSession();
         session = sessionData?.session;
       }
 
-      if (data.user) {
+      if (data?.user) {
         try {
           await supabase.from('profiles').upsert([
             {
@@ -340,14 +344,14 @@ export const authService = {
       });
       if (error) {
         const rawMsg = (error.message || '').toLowerCase();
-        if (rawMsg.includes('invalid login credentials') || rawMsg.includes('invalid email or password')) {
+        if (rawMsg.includes('invalid login credentials') || rawMsg.includes('invalid email or password') || rawMsg.includes('invalid credentials')) {
           throw new Error('Invalid email or password.');
-        } else if (rawMsg.includes('email not confirmed')) {
-          throw new Error('Email confirmation is required in your Supabase project settings. Please turn off Confirm Email under Authentication > Providers > Email in the Supabase dashboard.');
+        } else if (rawMsg.includes('network') || rawMsg.includes('fetch')) {
+          throw new Error('Unable to connect to the authentication service. Please try again.');
         } else if (rawMsg.includes('rate limit')) {
           throw new Error('Too many login attempts. Please wait a moment before trying again.');
         }
-        throw error;
+        throw new Error('Invalid email or password.');
       }
 
       const {
@@ -355,7 +359,7 @@ export const authService = {
       } = await supabase.auth.getSession();
 
       if (!session || !data.user) {
-        throw new Error('Login succeeded, but your session could not be established. Please try again.');
+        throw new Error('Login failed. Please try again.');
       }
 
       // Check if profile exists; if not, create it with user metadata
