@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 export default function SellerAuthModal({ isOpen, onClose, onOpenDashboard }) {
   const { signUpSeller, login } = useAuth();
@@ -31,7 +32,7 @@ export default function SellerAuthModal({ isOpen, onClose, onOpenDashboard }) {
         if (!ownerName || !email || !password || !restaurantName || !address) {
           throw new Error('Please fill in all required restaurant details.');
         }
-        await signUpSeller({
+        const res = await signUpSeller({
           ownerName,
           email,
           phone,
@@ -42,6 +43,11 @@ export default function SellerAuthModal({ isOpen, onClose, onOpenDashboard }) {
           cuisine,
           openingHours
         });
+        if (isSupabaseConfigured && (!res || !res.session)) {
+          setErrorMsg('Account registered! Please check your email to confirm your account, then log in.');
+          setIsRegisterMode(false);
+          return;
+        }
         onClose();
         if (onOpenDashboard) onOpenDashboard();
       } else {

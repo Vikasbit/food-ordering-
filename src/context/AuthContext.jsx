@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../lib/supabase';
+import { authService, isSupabaseConfigured, supabase } from '../lib/supabase';
 import { getSavedAddresses, saveAddress } from '../services/savedAddressesService';
 
 const AuthContext = createContext();
@@ -10,11 +10,52 @@ export function AuthProvider({ children }) {
   const [savedAddresses, setSavedAddresses] = useState([]);
 
   useEffect(() => {
-    authService.getCurrentUser().then((usr) => {
-      setUser(usr);
-      setLoading(false);
-    });
+    let isMounted = true;
+
+    async function initializeAuth() {
+      try {
+        if (isSupabaseConfigured) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user && isMounted) {
+            const profile = await authService.getCurrentUser();
+            if (isMounted) setUser(profile);
+          } else if (isMounted) {
+            setUser(null);
+          }
+        } else {
+          const mockUser = await authService.getCurrentUser();
+          if (isMounted) setUser(mockUser);
+        }
+      } catch (err) {
+        console.error('Error initializing auth state:', err);
+        if (isMounted) setUser(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    initializeAuth();
     setSavedAddresses(getSavedAddresses());
+
+    if (isSupabaseConfigured) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          const profile = await authService.getCurrentUser();
+          if (isMounted) setUser(profile);
+        } else {
+          if (isMounted) setUser(null);
+        }
+      });
+
+      return () => {
+        isMounted = false;
+        subscription?.unsubscribe();
+      };
+    }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email, password) => {
@@ -25,13 +66,32 @@ export function AuthProvider({ children }) {
 
   const signUpCustomer = async (details) => {
     const res = await authService.signUpCustomer(details);
-    setUser(res.user);
-    return res.user;
+    if (isSupabaseConfigured) {
+      if (res?.session) {
+        const profile = await authService.getCurrentUser();
+        setUser(profile);
+      } else {
+        // Real session was not issued (e.g. Email confirmation required in Supabase)
+        setUser(null);
+      }
+    } else {
+      setUser(res.user);
+    }
+    return res;
   };
 
   const signUpSeller = async (details) => {
     const res = await authService.signUpSeller(details);
-    setUser(res.user);
+    if (isSupabaseConfigured) {
+      if (res?.session) {
+        const profile = await authService.getCurrentUser();
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+    } else {
+      setUser(res.user);
+    }
     return res;
   };
 

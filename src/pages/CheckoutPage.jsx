@@ -3,6 +3,7 @@ import { formatINR, parsePrice } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { checkoutService } from '../services/checkoutService';
 import LocationPickerModal from '../components/LocationPickerModal';
 import PaymentMethodSelector from '../components/PaymentMethodSelector';
@@ -87,6 +88,25 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
       setLoadingMessage('Creating order...');
+
+      let orderUserId;
+      if (isSupabaseConfigured) {
+        const {
+          data: { user: authUser },
+          error: authError
+        } = await supabase.auth.getUser();
+
+        if (authError || !authUser) {
+          throw new Error('Your login session is not active. Please log in again.');
+        }
+        orderUserId = authUser.id;
+      } else {
+        if (!user?.id) {
+          throw new Error('Your login session is not active. Please log in again.');
+        }
+        orderUserId = user.id;
+      }
+
       const rest = activeCartRestaurant || {
         id: 'kitchen-1',
         name: 'BIGBITES Flagship Kitchen',
@@ -97,7 +117,7 @@ export default function CheckoutPage() {
         cartItems: cartItems.map(i => ({ id: i.id, quantity: i.quantity, price: i.price, rawPrice: i.rawPrice })),
         restaurantId: rest.id,
         couponCode: appliedCoupon?.code || null,
-        userId: user?.id || 'guest-user',
+        userId: orderUserId,
         paymentMethod // include selected payment method
       });
       if (orderResponse.paymentMethod === 'COD') {

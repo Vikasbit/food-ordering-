@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'login', onSwitchToSeller }) {
   const { user, login, signUpCustomer, logout } = useAuth();
@@ -28,8 +29,13 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
         if (!fullName.trim() || !email.trim() || !password.trim()) {
           throw new Error('Please fill in all required fields.');
         }
-        await signUpCustomer({ email, password, fullName, phone });
-        onClose();
+        const res = await signUpCustomer({ email, password, fullName, phone });
+        if (isSupabaseConfigured && (!res || !res.session)) {
+          setSuccessMsg('Account registered! Please check your email inbox to confirm your account, then log in.');
+          setMode('login');
+        } else {
+          onClose();
+        }
       } else if (mode === 'forgot') {
         setSuccessMsg(`Password reset link sent to ${email}. Check your inbox!`);
       }

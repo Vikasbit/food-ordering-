@@ -145,10 +145,15 @@ initializeMockStore();
 export const authService = {
   async getCurrentUser() {
     if (isSupabaseConfigured) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      return profile || { id: user.id, email: user.email, role: 'customer' };
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return null;
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+      return profile || {
+        id: session.user.id,
+        email: session.user.email,
+        role: session.user.user_metadata?.role || 'customer',
+        full_name: session.user.user_metadata?.full_name || ''
+      };
     }
     const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
     return saved ? JSON.parse(saved) : null;
@@ -162,10 +167,14 @@ export const authService = {
         options: { data: { full_name: fullName, phone, role: 'customer' } }
       });
       if (error) throw error;
-      if (data.user) {
-        await supabase.from('profiles').insert([
-          { id: data.user.id, email, full_name: fullName, phone, role: 'customer' }
-        ]);
+      if (data.user && data.session) {
+        try {
+          await supabase.from('profiles').upsert([
+            { id: data.user.id, email, full_name: fullName, phone, role: 'customer' }
+          ]);
+        } catch (e) {
+          console.warn('Profile sync warning:', e);
+        }
       }
       return data;
     }
@@ -185,7 +194,7 @@ export const authService = {
     users.push(newUser);
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
-    return { user: newUser };
+    return { user: newUser, session: { user: newUser } };
   },
 
   async signUpSeller({ fullName, ownerName, email, phone, password, restaurantName, address, city, cuisine, openingHours }) {
@@ -198,29 +207,33 @@ export const authService = {
       });
       if (error) throw error;
 
-      if (data.user) {
-        await supabase.from('profiles').insert([
-          { id: data.user.id, email, full_name: finalName, phone, role: 'seller' }
-        ]);
+      if (data.user && data.session) {
+        try {
+          await supabase.from('profiles').upsert([
+            { id: data.user.id, email, full_name: finalName, phone, role: 'seller' }
+          ]);
 
-        if (restaurantName) {
-          const newRest = {
-            seller_id: data.user.id,
-            name: restaurantName,
-            slug: restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            address: address || '',
-            city: city || 'DELHI',
-            lat: 28.6315,
-            lng: 77.2167,
-            cuisine: cuisine || 'Indian Street Food',
-            phone: phone || '',
-            opening_hours: openingHours || '10:00 AM - 11:00 PM',
-            delivery_radius_km: 12,
-            status: 'active',
-            rating: 4.8,
-            reviews_count: 1
-          };
-          await supabase.from('restaurants').insert([newRest]);
+          if (restaurantName) {
+            const newRest = {
+              seller_id: data.user.id,
+              name: restaurantName,
+              slug: restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              address: address || '',
+              city: city || 'DELHI',
+              lat: 28.6315,
+              lng: 77.2167,
+              cuisine: cuisine || 'Indian Street Food',
+              phone: phone || '',
+              opening_hours: openingHours || '10:00 AM - 11:00 PM',
+              delivery_radius_km: 12,
+              status: 'active',
+              rating: 4.8,
+              reviews_count: 1
+            };
+            await supabase.from('restaurants').insert([newRest]);
+          }
+        } catch (e) {
+          console.warn('Seller restaurant setup warning:', e);
         }
       }
       return data;
@@ -242,15 +255,20 @@ export const authService = {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newSeller));
     
-    return { user: newSeller };
+    return { user: newSeller, session: { user: newSeller } };
   },
 
   async login({ email, password }) {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-      return profile || data.user;
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+      return profile || {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.user_metadata?.role || 'customer',
+        full_name: data.user.user_metadata?.full_name || ''
+      };
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');

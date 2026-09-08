@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 export default function SellerRegisterPage() {
   const { signUpSeller } = useAuth();
@@ -32,7 +33,13 @@ export default function SellerRegisterPage() {
     setLoading(true);
     
     try {
-      await signUpSeller({ fullName: name, email, phone, password });
+      const res = await signUpSeller({ fullName: name, email, phone, password });
+      if (isSupabaseConfigured && (!res || !res.session)) {
+        setError('');
+        alert('Registration successful! Please check your email to confirm your account before logging in to your Restaurant Partner account.');
+        navigate('/seller/login');
+        return;
+      }
       // Redirect to initial setup page after registration
       navigate('/seller/restaurant/setup');
     } catch (err) {
