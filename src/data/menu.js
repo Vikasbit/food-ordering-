@@ -18,7 +18,7 @@ export const SIGNATURE_DISHES = [
     hindiName: 'बटर चिकन',
     name: 'BUTTER CHICKEN',
     category: 'Chicken',
-    price: '₹340',
+    price: '₹460',
     description: 'TANDOOR ROASTED GRILLED CHICKEN, SIMMERED IN A VELVET TOMATO SAUCE WITH ALMONDS & CASHEWS.',
     image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzs6zoNqsUCjEvKYe-Cu1wqNcCeDqESA16SBy5EGm1nQhmpdj8N06053aK&s=10',
     bgColor: 'var(--green)',
@@ -32,7 +32,7 @@ export const SIGNATURE_DISHES = [
     hindiName: 'भेल पूरी',
     name: 'BHEL PURI',
     category: 'Chaats',
-    price: '₹160',
+    price: '₹200',
     description: 'PUFFED RICE, TAMARIND CHUTNEY, RAW MANGO, POMEGRANATE & CRISPY SEV CRUNCH.',
     image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80',
     bgColor: 'var(--red)',
@@ -65,7 +65,7 @@ export const MENU_ITEMS = {
       name: 'Dal Makhani',
       hindiName: 'दाल मखनी',
       desc: 'Slow-cooked black lentils simmered overnight with butter, cream, and aromatic spices.',
-      price: '₹260',
+      price: '₹350',
       isVeg: true,
       image: 'https://www.seriouseats.com/thmb/nWB-o2wU8jHWQnKeEYiesp7jvDo=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/20241121-SEA-DalMakhani-QiAi-Hero1-39-0a75d58ae8c24d2fa2d108b84d487d28.jpg'
     },
@@ -73,7 +73,7 @@ export const MENU_ITEMS = {
       name: 'Smoky Baingan Bharta',
       hindiName: 'बैंगन भरता',
       desc: 'Fire-roasted eggplant mashed with mustard oil, green chillies, onions, and coriander.',
-      price: '₹230',
+      price: '₹300',
       isVeg: true,
       image: 'https://myfoodstory.com/wp-content/uploads/2021/09/easy-baingan-bharta-smoky-eggplant-stir-fry-4.jpg'
     }
@@ -92,7 +92,7 @@ export const MENU_ITEMS = {
       name: 'Chicken Chettinad',
       hindiName: 'चिकन चेट्टीनाड',
       desc: 'Spicy Tamil Nadu style chicken cooked with roasted coconut, black pepper, and curry leaves.',
-      price: '₹360',
+      price: '₹500',
       isVeg: false,
       image: 'https://glebekitchen.com/wp-content/uploads/2022/06/chettinadchickencurryscenetop.jpg'
     },
@@ -100,7 +100,7 @@ export const MENU_ITEMS = {
       name: 'Kadai Chicken',
       hindiName: 'कड़ाई चिकन',
       desc: 'Succulent chicken stir-fried with bell peppers, tomatoes, and coarsely ground spices.',
-      price: '₹330',
+      price: '₹470',
       isVeg: false,
       image: 'https://www.cookwithkushi.com/wp-content/uploads/2024/09/chicken_karahi_kadai_murgh_recipe.jpg'
     }
@@ -111,7 +111,7 @@ export const MENU_ITEMS = {
       name: 'Samosa Chaat',
       hindiName: 'समोसा चाट',
       desc: 'Crushed potato samosa topped with spiced chickpea ragda, yogurt, and chutneys.',
-      price: '₹140',
+      price: '₹210',
       isVeg: true,
       image: 'https://cdn.mygingergarlickitchen.com/images/800px/800px-samosa-chaat-4.jpg'
     },
@@ -119,7 +119,7 @@ export const MENU_ITEMS = {
       name: 'Amritsari Fish Fry',
       hindiName: 'अमृतसरी फिश फ्राई',
       desc: 'Crispy carom-seed spiced batter fried river fish served with mint chutney.',
-      price: '₹320',
+      price: '₹470',
       isVeg: false,
       image: 'https://myfoodstory.com/wp-content/uploads/2024/11/Amritsari-Fish-Fry-Air-Fryer-1.jpg'
     },
@@ -127,7 +127,7 @@ export const MENU_ITEMS = {
       name: 'Pani Puri Bombs',
       hindiName: 'पानी पूरी',
       desc: 'Crispy hollow puris filled with spiced potato mash and spicy mint tamarind water.',
-      price: '₹120',
+      price: '₹200',
       isVeg: true,
       image: 'https://www.ohmyveg.co.uk/wp-content/uploads/2023/07/Dahi-Puri-1-768x1024.jpg'
     },
@@ -135,7 +135,7 @@ export const MENU_ITEMS = {
       name: 'Dahi Bhalla',
       hindiName: 'दही भल्ला',
       desc: 'Soft lentil dumplings soaked in sweet curd, sprinkled with roasted cumin and pomegranate.',
-      price: '₹150',
+      price: '₹230',
       isVeg: true,
       image: 'https://www.teaforturmeric.com/wp-content/uploads/2022/04/Dahi-Bhalla-11-728x1092.jpg'
     },
@@ -143,7 +143,7 @@ export const MENU_ITEMS = {
       name: 'Aloo Tikki Ragda',
       hindiName: 'आलू टिक्की रगड़ा',
       desc: 'Golden pan-fried potato patties served over white pea gravy with spicy sweet chutneys.',
-      price: '₹130',
+      price: '₹200',
       isVeg: true,
       image: 'https://www.jcookingodyssey.com/wp-content/uploads/2025/12/Aloo-Tikki.jpg'
     }
@@ -154,7 +154,7 @@ export const MENU_ITEMS = {
       name: 'Garlic Butter Naan',
       hindiName: 'गार्लिक बटर नान',
       desc: 'Tandoor-baked flatbread brushed with garlic butter and fresh coriander.',
-      price: '₹70',
+      price: '₹120',
       isVeg: true,
       image: 'https://www.swankyrecipes.com/wp-content/uploads/2021/03/Buttery-Garlic-Naan.jpg'
     },
@@ -162,7 +162,7 @@ export const MENU_ITEMS = {
       name: 'Laccha Paratha',
       hindiName: 'लच्छा पराठा',
       desc: 'Multi-layered crispy whole wheat bread baked in clay tandoor oven.',
-      price: '₹60',
+      price: '₹100',
       isVeg: true,
       image: 'https://i2.wp.com/www.vegrecipesofindia.com/wp-content/uploads/2010/06/lachha-paratha.jpg'
     },
@@ -178,7 +178,7 @@ export const MENU_ITEMS = {
       name: 'Dum Chicken Biryani',
       hindiName: 'दम चिकन बिरयानी',
       desc: 'Aromatic basmati rice layered with marinated chicken, saffron, and fried onions in earthen clay pot.',
-      price: '₹380',
+      price: '₹520',
       isVeg: false,
       image: 'https://img.magnific.com/premium-photo/dum-handi-chicken-biryani-is-prepared-earthen-clay-pot-called-haandi-popular-indian-non-vegetarian-food_466689-52384.jpg?semt=ais_test_b&w=740&q=80'
     },
@@ -186,7 +186,7 @@ export const MENU_ITEMS = {
       name: 'Jeera Rice',
       hindiName: 'जीरा राइस',
       desc: 'Fragrant basmati rice tempered with ghee, cumin seeds, and green cardamom.',
-      price: '₹180',
+      price: '₹250',
       isVeg: true,
       image: 'https://cdn.create.vista.com/api/media/small/391548594/stock-photo-cumin-rice-jeera-rice-popular-indian-main-course-item-made'
     }
@@ -197,7 +197,7 @@ export const MENU_ITEMS = {
       name: 'Gulab Jamun',
       hindiName: 'गुलाब जामुन',
       desc: 'Warm milk-solid dumplings soaked in cardamom and rose water sugar syrup.',
-      price: '₹110',
+      price: '₹150',
       isVeg: true,
       image: 'https://img.magnific.com/premium-photo/gulab-jamun-bowl-copper-antique-bowl-with-spoon-indian-dessert-sweet-dish_926199-2408784.jpg?semt=ais_hybrid&w=740&q=80'
     },
@@ -205,7 +205,7 @@ export const MENU_ITEMS = {
       name: 'Mango Kulfi',
       hindiName: 'मैंगो कुल्फी',
       desc: 'Traditional Indian frozen dessert made with Alphonso mango pulp and thickened milk.',
-      price: '₹120',
+      price: '₹180',
       isVeg: true,
       image: 'https://www.cookshideout.com/wp-content/uploads/2010/09/Mango-Kulfi4S.jpg'
     },
@@ -213,7 +213,7 @@ export const MENU_ITEMS = {
       name: 'Mango Lassi',
       hindiName: 'मैंगो लस्सी',
       desc: 'Chilled creamy yogurt drink blended with fresh mangoes and cardamom.',
-      price: '₹90',
+      price: '₹130',
       isVeg: true,
       image: 'https://thumbs.dreamstime.com/b/mango-lassi-cardamom-29546849.jpg'
     },
@@ -221,7 +221,7 @@ export const MENU_ITEMS = {
       name: 'Masala Chai',
       hindiName: 'मसाला चाय',
       desc: 'Traditional Indian spiced tea brewed with ginger, cardamom, cloves, and whole milk.',
-      price: '₹50',
+      price: '₹80',
       isVeg: true,
       image: 'https://i.pinimg.com/originals/d2/f4/4e/d2f44e914953834cd4784f8497f8bee6.jpg'
     }
