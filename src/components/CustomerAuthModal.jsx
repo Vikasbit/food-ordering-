@@ -7,40 +7,80 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
   const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
+  const validateEmail = (val) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !validateEmail(cleanEmail)) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+
+    if (mode === 'login') {
+      if (!cleanPassword) {
+        setErrorMsg('Please enter your password.');
+        return;
+      }
+    } else if (mode === 'register') {
+      if (!fullName.trim() || fullName.trim().length < 2) {
+        setErrorMsg('Please enter your full name (minimum 2 characters).');
+        return;
+      }
+      if (!cleanPassword || cleanPassword.length < 6) {
+        setErrorMsg('Password must be at least 6 characters.');
+        return;
+      }
+      if (cleanPassword !== confirmPassword.trim()) {
+        setErrorMsg('Passwords do not match. Please verify.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       if (mode === 'login') {
-        await login(email, password);
+        await login(cleanEmail, cleanPassword);
         onClose();
       } else if (mode === 'register') {
-        if (!fullName.trim() || !email.trim() || !password.trim()) {
-          throw new Error('Please fill in all required fields.');
-        }
-        await signUpCustomer({ email, password, fullName, phone });
-        try {
-          await login(email, password);
-        } catch (e) {
-          // Continue if already authenticated
-        }
+        await signUpCustomer({
+          email: cleanEmail,
+          password: cleanPassword,
+          fullName: fullName.trim()
+        });
         onClose();
       } else if (mode === 'forgot') {
-        setSuccessMsg(`Password reset link sent to ${email}. Check your inbox!`);
+        setSuccessMsg(`Password reset link sent to ${cleanEmail}. Check your inbox!`);
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Authentication failed.');
+      const rawMsg = err.message || '';
+      if (rawMsg.toLowerCase().includes('invalid login credentials') || rawMsg.toLowerCase().includes('invalid email or password')) {
+        setErrorMsg('Invalid email or password.');
+      } else if (rawMsg.toLowerCase().includes('already registered') || rawMsg.toLowerCase().includes('already exists')) {
+        setErrorMsg('An account with this email already exists. Please log in.');
+      } else if (rawMsg.toLowerCase().includes('rate limit')) {
+        setErrorMsg('Too many attempts. Please wait a moment before trying again.');
+      } else if (rawMsg.toLowerCase().includes('fetch') || rawMsg.toLowerCase().includes('network')) {
+        setErrorMsg('Unable to connect to the authentication service. Please try again.');
+      } else {
+        setErrorMsg(rawMsg || 'Authentication failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -217,21 +257,6 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                 />
               </div>
 
-              {mode === 'register' && (
-                <div>
-                  <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
-                    MOBILE PHONE:
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
-                  />
-                </div>
-              )}
-
               {mode !== 'forgot' && (
                 <div>
                   <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
@@ -248,21 +273,43 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                 </div>
               )}
 
+              {mode === 'register' && (
+                <div>
+                  <label style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', display: 'block', marginBottom: '0.3rem' }}>
+                    CONFIRM PASSWORD:
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{ width: '100%', padding: '0.7rem', border: 'var(--border-thick)', fontFamily: 'var(--font-body)' }}
+                  />
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="btn-editorial"
                 style={{
                   width: '100%',
-                  backgroundColor: 'var(--yellow)',
+                  backgroundColor: isSubmitting ? '#e0e0e0' : 'var(--yellow)',
                   color: 'var(--black)',
                   padding: '0.9rem',
                   fontSize: '0.95rem',
-                  marginTop: '0.5rem'
+                  marginTop: '0.5rem',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.7 : 1
                 }}
               >
                 {isSubmitting
-                  ? 'PROCESSING...'
+                  ? mode === 'login'
+                    ? 'Logging in...'
+                    : mode === 'register'
+                    ? 'Creating account...'
+                    : 'Sending link...'
                   : mode === 'login'
                   ? 'LOGIN TO BIGBITES →'
                   : mode === 'register'
@@ -276,14 +323,23 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                   <>
                     <button
                       type="button"
-                      onClick={() => setMode('register')}
+                      onClick={() => {
+                        setMode('register');
+                        setErrorMsg('');
+                        setSuccessMsg('');
+                        setConfirmPassword('');
+                      }}
                       style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 800, cursor: 'pointer' }}
                     >
                       New user? Register
                     </button>
                     <button
                       type="button"
-                      onClick={() => setMode('forgot')}
+                      onClick={() => {
+                        setMode('forgot');
+                        setErrorMsg('');
+                        setSuccessMsg('');
+                      }}
                       style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer' }}
                     >
                       Forgot password?
@@ -292,7 +348,12 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setMode('login')}
+                    onClick={() => {
+                      setMode('login');
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                      setConfirmPassword('');
+                    }}
                     style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 800, cursor: 'pointer' }}
                   >
                     Back to Login

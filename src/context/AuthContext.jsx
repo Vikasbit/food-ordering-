@@ -39,11 +39,11 @@ export function AuthProvider({ children }) {
 
     if (isSupabaseConfigured) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (session?.user && isMounted) {
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          if (isMounted) setUser(null);
+        } else if (session?.user) {
           const profile = await authService.getCurrentUser();
           if (isMounted) setUser(profile);
-        } else if (isMounted) {
-          setUser(null);
         }
       });
 

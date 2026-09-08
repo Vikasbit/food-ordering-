@@ -12,16 +12,30 @@ export const checkoutService = {
    */
   async createRazorpayOrder({ cartItems, restaurantId, couponCode, userId, paymentMethod = 'UPI' }) {
     if (isSupabaseConfigured) {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.access_token) {
-        throw new Error('Your login session is not active. Please log in again.');
+      const {
+        data: { user: authUser },
+        error: authError
+      } = await supabase.auth.getUser();
+
+      if (authError || !authUser) {
+        throw new Error('Please log in again before placing your order.');
       }
 
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { cartItems, restaurantId, couponCode, userId, paymentMethod },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        body: {
+          cartItems,
+          restaurantId,
+          couponCode,
+          userId: authUser.id,
+          paymentMethod
+        },
+        headers
       });
       if (error) throw error;
       return data;

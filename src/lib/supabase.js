@@ -181,11 +181,10 @@ export const authService = {
     return saved ? JSON.parse(saved) : null;
   },
 
-  async signUpCustomer({ email, password, fullName, phone }) {
+  async signUpCustomer({ email, password, fullName }) {
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanPassword = (password || '').trim();
     const cleanFullName = (fullName || '').trim();
-    const cleanPhone = (phone || '').trim();
 
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.auth.signUp({
@@ -194,17 +193,24 @@ export const authService = {
         options: {
           data: {
             full_name: cleanFullName,
-            phone: cleanPhone,
             role: 'customer'
           }
         }
       });
-      if (error) throw error;
+      if (error) {
+        const msg = error.message || '';
+        if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+          throw new Error('An account with this email already exists. Please log in.');
+        }
+        throw error;
+      }
 
       // Obtain the authenticated Supabase session
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
+      let session = data.session;
+      if (!session) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        session = sessionData?.session;
+      }
 
       if (data.user) {
         try {
@@ -213,7 +219,6 @@ export const authService = {
               id: data.user.id,
               email: cleanEmail,
               full_name: cleanFullName,
-              phone: cleanPhone,
               role: 'customer'
             }
           ]);
@@ -227,14 +232,13 @@ export const authService = {
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
     if (users.find((u) => u.email.toLowerCase() === cleanEmail)) {
-      throw new Error('An account with this email already exists.');
+      throw new Error('An account with this email already exists. Please log in.');
     }
     const newUser = {
       id: `user-${Date.now()}`,
       email: cleanEmail,
       password: cleanPassword,
       full_name: cleanFullName,
-      phone: cleanPhone,
       role: 'customer'
     };
     users.push(newUser);
@@ -334,7 +338,25 @@ export const authService = {
         email: cleanEmail,
         password: cleanPassword
       });
-      if (error) throw error;
+      if (error) {
+        const rawMsg = (error.message || '').toLowerCase();
+        if (rawMsg.includes('invalid login credentials') || rawMsg.includes('invalid email or password')) {
+          throw new Error('Invalid email or password.');
+        } else if (rawMsg.includes('email not confirmed')) {
+          throw new Error('Email confirmation is required in your Supabase project settings. Please turn off Confirm Email under Authentication > Providers > Email in the Supabase dashboard.');
+        } else if (rawMsg.includes('rate limit')) {
+          throw new Error('Too many login attempts. Please wait a moment before trying again.');
+        }
+        throw error;
+      }
+
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session || !data.user) {
+        throw new Error('Login succeeded, but your session could not be established. Please try again.');
+      }
 
       // Check if profile exists; if not, create it with user metadata
       let { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).maybeSingle();

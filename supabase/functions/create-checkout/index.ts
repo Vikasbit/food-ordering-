@@ -19,18 +19,29 @@ serve(async (req) => {
   try {
     const { cartItems = [], restaurantId, couponCode, userId, paymentMethod = 'UPI' } = await req.json()
 
-    if (!restaurantId || !userId || !Array.isArray(cartItems) || cartItems.length === 0) {
-      throw new Error('Restaurant, user and cart items are required')
+    if (!restaurantId || !Array.isArray(cartItems) || cartItems.length === 0) {
+      throw new Error('Restaurant and cart items are required')
+    }
+
+    const authHeader = req.headers.get('Authorization') ?? ''
+    if (!authHeader) {
+      return json({ error: 'Missing authorization header' }, 401)
     }
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } }
+      { global: { headers: { Authorization: authHeader } } }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user || user.id !== userId) throw new Error('Unauthorized')
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      return json({ error: 'Unauthorized: Invalid or expired session' }, 401)
+    }
+
+    if (userId && user.id !== userId) {
+      return json({ error: 'User identity mismatch' }, 403)
+    }
 
     const { data: restaurant, error: restError } = await supabaseClient
       .from('restaurants')
