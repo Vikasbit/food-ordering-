@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'login', onSwitchToSeller }) {
-  const { user, login, signUpCustomer, logout, resendConfirmationEmail } = useAuth();
+  const { user, login, signUpCustomer, logout } = useAuth();
   const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,33 +12,13 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEmailNotConfirmed, setIsEmailNotConfirmed] = useState(false);
-  const [isResending, setIsResending] = useState(false);
 
   if (!isOpen) return null;
-
-  const handleResendConfirmation = async () => {
-    if (!email) {
-      setErrorMsg('Please enter your email above to resend the verification link.');
-      return;
-    }
-    setIsResending(true);
-    try {
-      await resendConfirmationEmail(email);
-      setSuccessMsg(`Verification email resent to ${email}! Please check your inbox and spam folder.`);
-      setIsEmailNotConfirmed(false);
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to resend confirmation email.');
-    } finally {
-      setIsResending(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
-    setIsEmailNotConfirmed(false);
     setIsSubmitting(true);
 
     try {
@@ -49,22 +29,18 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
         if (!fullName.trim() || !email.trim() || !password.trim()) {
           throw new Error('Please fill in all required fields.');
         }
-        const res = await signUpCustomer({ email, password, fullName, phone });
-        if (isSupabaseConfigured && (!res || !res.session)) {
-          setSuccessMsg('Account registered! Please check your email inbox to confirm your account, then log in.');
-          setMode('login');
-        } else {
-          onClose();
+        await signUpCustomer({ email, password, fullName, phone });
+        try {
+          await login(email, password);
+        } catch (e) {
+          // Continue if already authenticated
         }
+        onClose();
       } else if (mode === 'forgot') {
         setSuccessMsg(`Password reset link sent to ${email}. Check your inbox!`);
       }
     } catch (err) {
-      const msg = err.message || 'Authentication failed.';
-      setErrorMsg(msg);
-      if (err.isEmailNotConfirmed || msg.toLowerCase().includes('email not confirmed')) {
-        setIsEmailNotConfirmed(true);
-      }
+      setErrorMsg(err.message || 'Authentication failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -188,35 +164,11 @@ export default function CustomerAuthModal({ isOpen, onClose, initialMode = 'logi
                     color: '#721C24',
                     border: '1px solid #111',
                     padding: '0.8rem',
-                    fontSize: '0.85rem'
+                    fontSize: '0.85rem',
+                    fontWeight: 700
                   }}
                 >
-                  <div style={{ fontWeight: 700, marginBottom: isEmailNotConfirmed ? '0.5rem' : 0 }}>
-                    ⚠️ {errorMsg}
-                  </div>
-                  {isEmailNotConfirmed && (
-                    <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px dashed #721C24' }}>
-                      <button
-                        type="button"
-                        disabled={isResending}
-                        onClick={handleResendConfirmation}
-                        className="btn-editorial"
-                        style={{
-                          backgroundColor: 'var(--black)',
-                          color: 'var(--cream)',
-                          padding: '0.4rem 0.8rem',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer',
-                          display: 'inline-block'
-                        }}
-                      >
-                        {isResending ? 'RESENDING LINK...' : '✉️ RESEND VERIFICATION EMAIL'}
-                      </button>
-                      <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', opacity: 0.9, lineHeight: 1.35 }}>
-                        <strong>Supabase Tip:</strong> In your Supabase Dashboard, go to <em>Authentication → Providers → Email</em> and turn off <strong>Confirm email</strong> for instant test logins without needing email clicks.
-                      </div>
-                    </div>
-                  )}
+                  ⚠️ {errorMsg}
                 </div>
               )}
 

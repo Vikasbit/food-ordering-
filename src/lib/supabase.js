@@ -192,21 +192,40 @@ export const authService = {
         email: cleanEmail,
         password: cleanPassword,
         options: {
-          data: { full_name: cleanFullName, phone: cleanPhone, role: 'customer' },
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+          data: { full_name: cleanFullName, phone: cleanPhone, role: 'customer' }
         }
       });
       if (error) throw error;
-      if (data.user && data.session) {
+
+      let session = data.session;
+      let user = data.user;
+
+      // Ensure immediate direct login session
+      if (!session) {
+        try {
+          const directLogin = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+          if (directLogin.data?.session) {
+            session = directLogin.data.session;
+            user = directLogin.data.user;
+          }
+        } catch (e) {
+          // Continue with available user data
+        }
+      }
+
+      if (user) {
         try {
           await supabase.from('profiles').upsert([
-            { id: data.user.id, email: cleanEmail, full_name: cleanFullName, phone: cleanPhone, role: 'customer' }
+            { id: user.id, email: cleanEmail, full_name: cleanFullName, phone: cleanPhone, role: 'customer' }
           ]);
         } catch (e) {
           console.warn('Profile sync warning:', e);
         }
       }
-      return data;
+      return { user, session };
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
@@ -238,21 +257,39 @@ export const authService = {
         email: cleanEmail,
         password: cleanPassword,
         options: {
-          data: { full_name: finalName, phone: cleanPhone, role: 'seller' },
-          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+          data: { full_name: finalName, phone: cleanPhone, role: 'seller' }
         }
       });
       if (error) throw error;
 
-      if (data.user && data.session) {
+      let session = data.session;
+      let user = data.user;
+
+      // Ensure immediate direct login session
+      if (!session) {
+        try {
+          const directLogin = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: cleanPassword
+          });
+          if (directLogin.data?.session) {
+            session = directLogin.data.session;
+            user = directLogin.data.user;
+          }
+        } catch (e) {
+          // Continue with available user data
+        }
+      }
+
+      if (user) {
         try {
           await supabase.from('profiles').upsert([
-            { id: data.user.id, email: cleanEmail, full_name: finalName, phone: cleanPhone, role: 'seller' }
+            { id: user.id, email: cleanEmail, full_name: finalName, phone: cleanPhone, role: 'seller' }
           ]);
 
           if (restaurantName) {
             const newRest = {
-              seller_id: data.user.id,
+              seller_id: user.id,
               name: restaurantName,
               slug: restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
               address: address || '',
@@ -273,7 +310,7 @@ export const authService = {
           console.warn('Seller restaurant setup warning:', e);
         }
       }
-      return data;
+      return { user, session };
     }
 
     const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
@@ -308,9 +345,7 @@ export const authService = {
       if (error) {
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
-          const customErr = new Error('Email not confirmed. Please verify your email inbox or disable "Confirm email" in Supabase.');
-          customErr.isEmailNotConfirmed = true;
-          throw customErr;
+          throw new Error('Please disable "Confirm email" in your Supabase Dashboard (Auth -> Providers -> Email) to allow direct login.');
         }
         throw error;
       }

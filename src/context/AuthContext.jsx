@@ -67,13 +67,13 @@ export function AuthProvider({ children }) {
   const signUpCustomer = async (details) => {
     const res = await authService.signUpCustomer(details);
     if (isSupabaseConfigured) {
-      if (res?.session) {
-        const profile = await authService.getCurrentUser();
-        setUser(profile);
-      } else {
-        // Real session was not issued (e.g. Email confirmation required in Supabase)
-        setUser(null);
-      }
+      const profile = await authService.getCurrentUser();
+      setUser(profile || (res.user ? {
+        id: res.user.id,
+        email: res.user.email,
+        role: 'customer',
+        full_name: details.fullName
+      } : null));
     } else {
       setUser(res.user);
     }
@@ -83,12 +83,13 @@ export function AuthProvider({ children }) {
   const signUpSeller = async (details) => {
     const res = await authService.signUpSeller(details);
     if (isSupabaseConfigured) {
-      if (res?.session) {
-        const profile = await authService.getCurrentUser();
-        setUser(profile);
-      } else {
-        setUser(null);
-      }
+      const profile = await authService.getCurrentUser();
+      setUser(profile || (res.user ? {
+        id: res.user.id,
+        email: res.user.email,
+        role: 'seller',
+        full_name: details.fullName || details.ownerName
+      } : null));
     } else {
       setUser(res.user);
     }

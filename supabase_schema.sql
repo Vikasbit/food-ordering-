@@ -198,3 +198,26 @@ CREATE POLICY "Sellers can update order status for their restaurant" ON public.o
     SELECT 1 FROM public.restaurants r WHERE r.id = orders.restaurant_id AND r.seller_id = auth.uid()
   )
 );
+
+-- ========================================================
+-- DIRECT LOGIN SETUP (NO EMAIL VERIFICATION REQUIRED)
+-- ========================================================
+-- 1. Auto-confirm all existing users directly:
+UPDATE auth.users 
+SET email_confirmed_at = NOW() 
+WHERE email_confirmed_at IS NULL;
+
+-- 2. Automatically mark every future registered user as confirmed on insert:
+CREATE OR REPLACE FUNCTION public.auto_confirm_new_user()
+RETURNS trigger AS $$
+BEGIN
+  NEW.email_confirmed_at = COALESCE(NEW.email_confirmed_at, NOW());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_auto_confirm ON auth.users;
+CREATE TRIGGER on_auth_user_auto_confirm
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.auto_confirm_new_user();
+
