@@ -1,57 +1,50 @@
 import { useEffect } from 'react';
 
-/**
- * RazorpayButton - Triggers Razorpay Checkout using the provided order data.
- * Props:
- *   order: { amount: number, currency: string, razorpayOrderId: string, razorpayKeyId: string }
- *   onSuccess: (paymentData) => void
- *   onError: (error) => void
- */
 export default function RazorpayButton({ order, onSuccess, onError }) {
-  // Ensure Razorpay script is loaded – it was added to index.html.
   useEffect(() => {
-    if (!window.Razorpay) {
-      console.error('Razorpay script not loaded.');
-    }
+    if (!window.Razorpay) console.error('Razorpay SDK not loaded.');
   }, []);
 
   const handleClick = () => {
     if (!window.Razorpay) {
-      onError && onError(new Error('Razorpay SDK not available'));
+      onError?.(new Error('Razorpay SDK is not loaded. Check the checkout script in index.html.'));
+      return;
+    }
+    if (!order?.razorpayKeyId || !order?.razorpayOrderId || !order?.amount) {
+      onError?.(new Error('Invalid Razorpay order returned by the backend.'));
       return;
     }
 
     const options = {
       key: order.razorpayKeyId,
-      amount: order.amount, // in paise
-      currency: order.currency,
+      amount: order.amount,
+      currency: order.currency || 'INR',
       name: 'BIGBITES',
-      description: 'Food Order',
+      description: 'BIGBITES Food Order',
       order_id: order.razorpayOrderId,
-      handler: function (response) {
-        // response: {razorpay_payment_id, razorpay_order_id, razorpay_signature}
-        onSuccess && onSuccess(response);
-      },
-      prefill: {
-        // Optional: you can prefill user details from auth context if available.
-        email: '',
-        contact: ''
-      },
-      theme: {
-        color: '#C84523'
-      }
+      handler: (response) => onSuccess?.(response),
+      prefill: { email: '', contact: '' },
+      theme: { color: '#C84523' },
     };
 
     const rzp = new window.Razorpay(options);
-    // Open the Razorpay checkout modal
-    rzp.open();
-    // Listen for payment failures and propagate detailed error
-    rzp.on('payment.failed', function (response) {
-      // response contains error details from Razorpay
-      const errorMsg = `Payment failed: ${response.error?.description || response.error?.reason || 'Unknown error'}`;
-      // Pass a structured error object to onError for better diagnostics
-      onError && onError(new Error(errorMsg + ' | Details: ' + JSON.stringify(response)));
+
+    rzp.on('payment.failed', (response) => {
+      const error = response?.error || {};
+      const message = [
+        error.description || 'Payment failed',
+        error.reason ? `Reason: ${error.reason}` : '',
+        error.code ? `Code: ${error.code}` : '',
+      ].filter(Boolean).join(' | ');
+      onError?.(new Error(message));
     });
+
+    rzp.on('modal.ondismiss', () => {
+      // Dismissing the checkout is not a payment failure; the order remains pending.
+      console.info('Razorpay checkout dismissed by customer.');
+    });
+
+    rzp.open();
   };
 
   return (
@@ -61,7 +54,7 @@ export default function RazorpayButton({ order, onSuccess, onError }) {
       className="btn-primary"
       style={{ width: '100%', padding: '1.1rem', fontSize: '1.1rem', marginTop: '0.5rem' }}
     >
-      Pay with Razorpay
+      Pay via UPI
     </button>
   );
 }
