@@ -34,3 +34,29 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
   // Return distance rounded to 1 decimal place
   return Math.round(dist * 10) / 10;
 }
+
+/**
+ * Validates geographical coordinates
+ * @param {*} lat 
+ * @param {*} lng 
+ * @returns {boolean}
+ */
+export function isValidCoordinate(lat, lng) {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) {
+    return false;
+  }
+  const nLat = Number(lat);
+  const nLng = Number(lng);
+  if (isNaN(nLat) || isNaN(nLng)) {
+    return false;
+  }
+  // Reject 0,0 null island / uninitialized coordinate
+  if (Math.abs(nLat) < 0.0001 && Math.abs(nLng) < 0.0001) {
+    return false;
+  }
+  if (nLat < -90 || nLat > 90 || nLng < -180 || nLng > 180) {
+    return false;
+  }
+  return true;
+}
+

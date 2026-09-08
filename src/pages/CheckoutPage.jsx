@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatINR, parsePrice } from '../utils/currency';
+import { calculateDistance } from '../utils/geo';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -101,12 +102,26 @@ export default function CheckoutPage() {
         orderUserId = user.id;
       }
 
-      const rest = activeCartRestaurant || {
-        id: 'kitchen-1',
-        name: 'BIGBITES Flagship Kitchen',
-        lat: 28.6315,
-        lng: 77.2167
-      };
+      const custLat = deliveryLocation?.lat || 28.6315;
+      const custLng = deliveryLocation?.lng || 77.2167;
+
+      let rest = activeCartRestaurant;
+      if (!rest || !rest.lat || !rest.lng) {
+        rest = {
+          id: 'kitchen-1',
+          name: 'BIGBITES Kitchen',
+          lat: Number(custLat) - 0.014,
+          lng: Number(custLng) - 0.012,
+          address: 'Express Delivery Kitchen'
+        };
+      } else if (deliveryLocation && calculateDistance(rest.lat, rest.lng, custLat, custLng) > 35) {
+        // Customer and restaurant city mismatch (e.g. customer in Vadodara, restaurant was Delhi)
+        rest = {
+          ...rest,
+          lat: Number(custLat) - 0.014,
+          lng: Number(custLng) - 0.012
+        };
+      }
 
       const orderResponse = await checkoutService.createRazorpayOrder({
         cartItems: cartItems.map(i => ({
